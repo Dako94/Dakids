@@ -6,7 +6,7 @@ const manifest = {
     "logo": "/media/icon.png",
     "background": "/media/background.jpg",
     "resources": ["catalog", "stream"],
-    "types": ["movie"], // Solo "movie"
+    "types": ["movie"],
     "idPrefixes": ["dakids-"],
     "catalogs": []
 };
