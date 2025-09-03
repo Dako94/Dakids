@@ -3,15 +3,18 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import { YtDlpWrap } from "yt-dlp-wrap";
+import pkg from "yt-dlp-wrap";
+const YtDlpWrap = pkg.default;
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 const PORT = process.env.PORT || 7000;
 
 // Cartella per salvare i video scaricati (opzionale)
@@ -37,6 +40,7 @@ function groupVideosByChannel(videos) {
 
 const metaDatabase = groupVideosByChannel(metaData);
 
+// Processa il database dei metadata
 function processMetaDatabase() {
     const channels = [];
     for (const [channelName, videos] of Object.entries(metaDatabase.channels)) {
@@ -60,30 +64,32 @@ function processMetaDatabase() {
     return channels;
 }
 
+// Config globale dei canali
 let userConfig = { channels: processMetaDatabase() };
 
 // Inizializza yt-dlp-wrap
-const youtubedl = new YtDlpWrap();
+const ytdlp = new YtDlpWrap();
 
-// Funzione per ottenere lo stream diretto da YouTube con cookies
+// Funzione per ottenere lo stream diretto da YouTube usando cookies
 async function getYouTubeStreamUrl(videoId) {
     try {
-        let cookiesFile = './cookies.txt';
-        if (process.env.YOUTUBE_COOKIES_PATH) cookiesFile = process.env.YOUTUBE_COOKIES_PATH;
+        // Leggi cookies dalla variabile d'ambiente o dal file cookies.txt
+        const cookies = process.env.YOUTUBE_COOKIES || (fs.existsSync('./cookies.txt') ? fs.readFileSync('./cookies.txt', 'utf-8') : '');
+        const cookieHeader = cookies ? cookies.split('\n').map(c => c.trim()).join('; ') : null;
 
-        const args = [
-            '-j', // JSON output
-            '--no-warnings',
+        const info = await ytdlp.execPromise(`https://www.youtube.com/watch?v=${videoId}`, [
+            '--dump-single-json',
             '--no-check-certificate',
-            '--prefer-free-formats'
-        ];
+            '--no-warnings',
+            '--prefer-free-formats',
+            ...(cookieHeader ? [`--add-header`, `cookie: ${cookieHeader}`] : []),
+            '--add-header', 'referer:youtube.com',
+            '--add-header', 'user-agent:googlebot'
+        ]);
 
-        if (fs.existsSync(cookiesFile)) args.push(`--cookies=${cookiesFile}`);
+        const data = JSON.parse(info);
+        const format = data.formats.find(f => f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none');
 
-        const infoRaw = await youtubedl.execPromise(`https://www.youtube.com/watch?v=${videoId}`, args);
-        const info = JSON.parse(infoRaw);
-
-        const format = info.formats.find(f => f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none');
         if (format && format.url) {
             console.log(`✅ Stream trovato per ${videoId}`);
             fs.writeFileSync(path.join(__dirname, "last_stream_url.txt"), format.url, "utf-8");
@@ -103,9 +109,9 @@ const manifest = {
     id: "com.dakids.Stremio",
     version: "2.0.0",
     name: "Dakids",
-    description: "Video per bambini con metadata",
-    logo: `http://localhost:${PORT}/media/icon.png`,
-    background: `http://localhost:${PORT}/media/background.jpg`,
+    description: "Video per bambini - Addon pronto all'uso con metadata completi",
+    logo: "/media/icon.png",
+    background: "/media/background.jpg",
     resources: ["catalog", "stream"],
     types: ["movie"],
     idPrefixes: ["dakids-"],
