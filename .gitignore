@@ -1,0 +1,31 @@
+# Dipendenze Node.js
+node_modules/
+
+# Log e debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+last_stream_url.txt
+
+# File temporanei
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.swo
+
+# Output video scaricati
+videos/
+
+# Variabili d'ambiente
+.env
+
+# Build o cache
+dist/
+.cache/
+
+# VSCode e IDE vari
+.vscode/
+.idea/
+*.iml
