@@ -68,7 +68,7 @@ let userConfig = { channels: processMetaDatabase() };
 async function getYouTubeStreamUrl(videoId) {
     try {
         // Leggi cookies dalla variabile d'ambiente
-        const cookies = process.env.YOUTUBE_COOKIES;
+        const cookies = process.env.YOUTUBE_COOKIES || fs.readFileSync('./cookies.txt', 'utf-8');
         const cookieHeader = cookies ? cookies.split(';').map(c => c.trim()).join('; ') : null;
 
         const info = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
