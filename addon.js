@@ -4,7 +4,7 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import pkg from "yt-dlp-wrap";
-const YtDlpWrap = pkg.default; // Import corretto per CommonJS
+const YtDlpWrap = pkg.default;
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -48,7 +48,7 @@ function processMetaDatabase() {
             channels.push({
                 name: channelName,
                 videos: videos.map(video => ({
-                    id: video.id.replace(/^_/, ''), // rimuove underscore iniziale
+                    id: video.id.replace(/^_/, ''),
                     url: video.url,
                     title: video.title,
                     thumbnail: `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`,
