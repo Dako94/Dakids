@@ -3,7 +3,7 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import youtubedl from "yt-dlp-exec";
+import { YtDlpWrap } from "yt-dlp-wrap";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -37,7 +37,6 @@ function groupVideosByChannel(videos) {
 
 const metaDatabase = groupVideosByChannel(metaData);
 
-// Processa il database dei metadata
 function processMetaDatabase() {
     const channels = [];
     for (const [channelName, videos] of Object.entries(metaDatabase.channels)) {
@@ -45,7 +44,7 @@ function processMetaDatabase() {
             channels.push({
                 name: channelName,
                 videos: videos.map(video => ({
-                    id: video.id.replace(/^_/, ''), // rimuove underscore iniziale
+                    id: video.id.replace(/^_/, ''),
                     url: video.url,
                     title: video.title,
                     thumbnail: `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`,
@@ -61,30 +60,30 @@ function processMetaDatabase() {
     return channels;
 }
 
-// Config globale dei canali
 let userConfig = { channels: processMetaDatabase() };
 
-// Funzione per ottenere lo stream diretto da YouTube usando cookies in memoria
+// Inizializza yt-dlp-wrap
+const youtubedl = new YtDlpWrap();
+
+// Funzione per ottenere lo stream diretto da YouTube con cookies
 async function getYouTubeStreamUrl(videoId) {
     try {
-        // Leggi cookies dalla variabile d'ambiente
-        const cookies = process.env.YOUTUBE_COOKIES || fs.readFileSync('./cookies.txt', 'utf-8');
-        const cookieHeader = cookies ? cookies.split(';').map(c => c.trim()).join('; ') : null;
+        let cookiesFile = './cookies.txt';
+        if (process.env.YOUTUBE_COOKIES_PATH) cookiesFile = process.env.YOUTUBE_COOKIES_PATH;
 
-        const info = await youtubedl(`https://www.youtube.com/watch?v=${videoId}`, {
-            dumpSingleJson: true,
-            noCheckCertificates: true,
-            noWarnings: true,
-            preferFreeFormats: true,
-            addHeader: [
-                'referer:youtube.com',
-                'user-agent:googlebot',
-                ...(cookieHeader ? [`cookie:${cookieHeader}`] : [])
-            ]
-        });
+        const args = [
+            '-j', // JSON output
+            '--no-warnings',
+            '--no-check-certificate',
+            '--prefer-free-formats'
+        ];
+
+        if (fs.existsSync(cookiesFile)) args.push(`--cookies=${cookiesFile}`);
+
+        const infoRaw = await youtubedl.execPromise(`https://www.youtube.com/watch?v=${videoId}`, args);
+        const info = JSON.parse(infoRaw);
 
         const format = info.formats.find(f => f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none');
-
         if (format && format.url) {
             console.log(`✅ Stream trovato per ${videoId}`);
             fs.writeFileSync(path.join(__dirname, "last_stream_url.txt"), format.url, "utf-8");
@@ -214,8 +213,4 @@ app.get('/', (req, res) => {
 // Avvio server
 app.listen(PORT, () => {
     console.log(`🎬 Dakids Addon avviato su http://localhost:${PORT}`);
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> a32d1ac381b7569eff2f01f0848b4858ba1c195b

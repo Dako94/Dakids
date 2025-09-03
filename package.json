@@ -1,7 +1,7 @@
 {
-  "name": "dakids-addon",
-  "version": "1.0.0",
-  "description": "Addon Stremio per video bambini con metadata",
+  "name": "dakids",
+  "version": "0.1.0",
+  "description": "Addon Stremio per video bambini",
   "main": "addon.js",
   "type": "module",
   "engines": {
@@ -9,12 +9,11 @@
   },
   "scripts": {
     "start": "node addon.js",
-    "postinstall": "npm install yt-dlp-exec"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
     "axios": "^1.5.0",
-    "yt-dlp-exec": "^1.2.1"
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "yt-dlp-wrap": "^2.3.12"
   }
 }
