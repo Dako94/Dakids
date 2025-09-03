@@ -4,7 +4,7 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import pkg from "yt-dlp-wrap";
-const { YtDlpWrap } = pkg;
+const YtDlpWrap = pkg.default; // Import corretto per CommonJS
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -16,188 +16,207 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 7000;
-const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`; // URL pubblico di Render
 
-// Cartella per eventuali video salvati
-const VIDEO_DIR = path.join(__dirname, "videos");
+// Cartella per salvare i video scaricati (opzionale)
+const VIDEO_DIR = path.join(__dirname, 'videos');
 if (!fs.existsSync(VIDEO_DIR)) fs.mkdirSync(VIDEO_DIR);
 
-// Servi file statici (media, logo, background)
-app.use("/media", express.static(path.join(__dirname, "media")));
-app.use("/videos", express.static(VIDEO_DIR));
+// Servi file statici (logo, background e video)
+app.use('/media', express.static(path.join(__dirname, 'media')));
+app.use('/videos', express.static(VIDEO_DIR));
 
-// Leggi metadata
-const metaData = JSON.parse(fs.readFileSync(path.join(__dirname, "meta.json"), "utf-8"));
+// Leggi il file JSON con i metadata
+const metaData = JSON.parse(fs.readFileSync(path.join(__dirname, 'meta.json'), 'utf-8'));
 
-// Raggruppa video per canale
+// Raggruppa i video per canale
 function groupVideosByChannel(videos) {
-  const channels = {};
-  videos.forEach((video) => {
-    if (!channels[video.channelName]) channels[video.channelName] = [];
-    channels[video.channelName].push(video);
-  });
-  return { channels };
+    const channels = {};
+    videos.forEach(video => {
+        if (!channels[video.channelName]) channels[video.channelName] = [];
+        channels[video.channelName].push(video);
+    });
+    return { channels };
 }
 
 const metaDatabase = groupVideosByChannel(metaData);
 
+// Processa il database dei metadata
 function processMetaDatabase() {
-  const channels = [];
-  for (const [channelName, videos] of Object.entries(metaDatabase.channels)) {
-    if (videos && videos.length > 0) {
-      channels.push({
-        name: channelName,
-        videos: videos.map((video) => ({
-          id: video.id.replace(/^_/, ""),
-          url: video.url,
-          title: video.title,
-          thumbnail: `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`,
-          description: `${video.title} - ${video.viewCount || 0} visualizzazioni`,
-          duration: video.duration,
-          viewCount: video.viewCount || 0,
-          likes: video.likes || 0,
-          date: video.date,
-        })),
-      });
+    const channels = [];
+    for (const [channelName, videos] of Object.entries(metaDatabase.channels)) {
+        if (videos && videos.length > 0) {
+            channels.push({
+                name: channelName,
+                videos: videos.map(video => ({
+                    id: video.id.replace(/^_/, ''), // rimuove underscore iniziale
+                    url: video.url,
+                    title: video.title,
+                    thumbnail: `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`,
+                    description: `${video.title} - ${video.viewCount || 0} visualizzazioni`,
+                    duration: video.duration,
+                    viewCount: video.viewCount || 0,
+                    likes: video.likes || 0,
+                    date: video.date
+                }))
+            });
+        }
     }
-  }
-  return channels;
+    return channels;
 }
 
+// Config globale dei canali
 let userConfig = { channels: processMetaDatabase() };
-const youtubedl = new YtDlpWrap(); // yt-dlp-wrap
 
-// Funzione per ottenere stream da YouTube con cookie opzionali
+// Inizializza yt-dlp-wrap
+const ytdlp = new YtDlpWrap();
+
+// Funzione per ottenere lo stream diretto da YouTube usando cookies
 async function getYouTubeStreamUrl(videoId) {
-  try {
-    const cookies = process.env.YOUTUBE_COOKIES || (fs.existsSync("./cookies.txt") ? fs.readFileSync("./cookies.txt", "utf-8") : "");
-    const cookieHeader = cookies ? cookies.split(";").map((c) => c.trim()).join("; ") : null;
+    try {
+        // Leggi cookies dalla variabile d'ambiente o dal file cookies.txt
+        const cookies = process.env.YOUTUBE_COOKIES || (fs.existsSync('./cookies.txt') ? fs.readFileSync('./cookies.txt', 'utf-8') : '');
+        const cookieHeader = cookies ? cookies.split('\n').map(c => c.trim()).join('; ') : null;
 
-    const info = await youtubedl.execPromise(`https://www.youtube.com/watch?v=${videoId}`, {
-      dumpSingleJson: true,
-      noCheckCertificates: true,
-      noWarnings: true,
-      preferFreeFormats: true,
-      addHeader: ["referer:youtube.com", "user-agent:googlebot", ...(cookieHeader ? [`cookie:${cookieHeader}`] : [])],
-    });
+        const info = await ytdlp.execPromise(`https://www.youtube.com/watch?v=${videoId}`, [
+            '--dump-single-json',
+            '--no-check-certificate',
+            '--no-warnings',
+            '--prefer-free-formats',
+            ...(cookieHeader ? [`--add-header`, `cookie: ${cookieHeader}`] : []),
+            '--add-header', 'referer:youtube.com',
+            '--add-header', 'user-agent:googlebot'
+        ]);
 
-    const format = info.formats.find((f) => f.ext === "mp4" && f.acodec !== "none" && f.vcodec !== "none");
-    return format?.url || `https://www.youtube.com/watch?v=${videoId}`;
-  } catch (err) {
-    console.error(`Errore yt-dlp per ${videoId}: ${err.message}`);
-    return `https://www.youtube.com/watch?v=${videoId}`;
-  }
+        const data = JSON.parse(info);
+        const format = data.formats.find(f => f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none');
+
+        if (format && format.url) {
+            console.log(`✅ Stream trovato per ${videoId}`);
+            fs.writeFileSync(path.join(__dirname, "last_stream_url.txt"), format.url, "utf-8");
+            return format.url;
+        }
+
+        console.warn(`⚠️ Nessun formato valido per ${videoId}`);
+        return `https://www.youtube.com/watch?v=${videoId}`;
+    } catch (err) {
+        console.error(`❌ Errore yt-dlp per ${videoId}: ${err.message}`);
+        return `https://www.youtube.com/watch?v=${videoId}`;
+    }
 }
 
 // Manifest Stremio
 const manifest = {
-  id: "com.dakids.Stremio",
-  version: "2.0.0",
-  name: "Dakids",
-  description: "Video per bambini - Addon pronto all'uso con metadata completi",
-  logo: `${BASE_URL}/media/icon.png`,
-  background: `${BASE_URL}/media/background.jpg`,
-  resources: ["catalog", "stream"],
-  types: ["movie"],
-  idPrefixes: ["dakids-"],
-  catalogs: [],
+    id: "com.dakids.Stremio",
+    version: "2.0.0",
+    name: "Dakids",
+    description: "Video per bambini - Addon pronto all'uso con metadata completi",
+    logo: "/media/icon.png",
+    background: "/media/background.jpg",
+    resources: ["catalog", "stream"],
+    types: ["movie"],
+    idPrefixes: ["dakids-"],
+    catalogs: []
 };
 
 function updateManifest() {
-  manifest.catalogs = userConfig.channels.map((channel, index) => ({
-    type: "movie",
-    id: `channel-${index}`,
-    name: channel.name,
-    poster: channel.videos[0]?.thumbnail,
-    background: channel.videos[0]?.thumbnail,
-    genres: ["Bambini", "Animazione", "Educativo"],
-  }));
+    manifest.catalogs = userConfig.channels.map((channel, index) => ({
+        type: "movie",
+        id: `channel-${index}`,
+        name: channel.name,
+        poster: channel.videos[0]?.thumbnail,
+        background: channel.videos[0]?.thumbnail,
+        genres: ["Bambini", "Animazione", "Educativo"]
+    }));
 }
 
 updateManifest();
 
-// ROUTE: manifest
-app.get("/manifest.json", (req, res) => res.json(manifest));
+// ROUTE: manifest.json
+app.get('/manifest.json', (req, res) => res.json(manifest));
 
-// ROUTE: catalog
-app.get("/catalog/movie/channel_:index.json", (req, res) => {
-  const index = parseInt(req.params.index);
-  const channel = userConfig.channels[index];
-  if (!channel) return res.json({ metas: [] });
+// ROUTE: catalogo
+app.get('/catalog/movie/channel_:index.json', (req, res) => {
+    const index = parseInt(req.params.index);
+    const channel = userConfig.channels[index];
+    if (!channel) return res.json({ metas: [] });
 
-  const metas = channel.videos.map((video, videoIndex) => ({
-    id: `dakids-${index}-${video.id}`,
-    type: "movie",
-    name: video.title,
-    poster: video.thumbnail,
-    posterShape: "landscape",
-    background: video.thumbnail,
-    description: video.description,
-    genres: ["Bambini", channel.name],
-    releaseInfo: video.date ? new Date(video.date).getFullYear().toString() : "2025",
-    runtime: parseInt(video.duration.split(":")[1]) || 7,
-    popularity: video.viewCount || (videoIndex + 1),
-    isMovie: true,
-  }));
+    const metas = channel.videos.map((video, videoIndex) => ({
+        id: `dakids-${index}-${video.id}`,
+        type: "movie",
+        name: video.title,
+        poster: video.thumbnail,
+        posterShape: "landscape",
+        background: video.thumbnail,
+        description: video.description,
+        genres: ["Bambini", channel.name],
+        releaseInfo: video.date ? new Date(video.date).getFullYear().toString() : "2025",
+        runtime: parseInt(video.duration.split(':')[1]) || 7,
+        popularity: video.viewCount || (videoIndex + 1),
+        isMovie: true
+    }));
 
-  res.json({ metas });
+    res.json({ metas });
 });
 
 // ROUTE: stream
-app.get("/stream/movie/:metaId.json", async (req, res) => {
-  const metaId = req.params.metaId;
-  const match = metaId.match(/^dakids-(\d+)-(.+)$/);
-  if (!match) return res.json({ streams: [] });
+app.get('/stream/movie/:metaId.json', async (req, res) => {
+    const metaId = req.params.metaId;
+    const match = metaId.match(/^dakids-(\d+)-(.+)$/);
+    if (!match) return res.json({ streams: [] });
 
-  const channelIndex = parseInt(match[1]);
-  const videoId = match[2];
-  const channel = userConfig.channels[channelIndex];
-  if (!channel) return res.json({ streams: [] });
+    const channelIndex = parseInt(match[1]);
+    const videoId = match[2];
+    const channel = userConfig.channels[channelIndex];
+    if (!channel) return res.json({ streams: [] });
 
-  const video = channel.videos.find((v) => v.id === videoId);
-  if (!video) return res.json({ streams: [] });
+    const video = channel.videos.find(v => v.id === videoId);
+    if (!video) return res.json({ streams: [] });
 
-  console.log("[STREAM REQUEST]", metaId);
-  const streamUrl = await getYouTubeStreamUrl(videoId);
+    console.log("[STREAM REQUEST]", metaId, "=>", channelIndex, videoId);
 
-  res.json({
-    streams: [
-      {
-        url: streamUrl,
-        title: `YouTube - ${channel.name}`,
-        name: "HD",
-      },
-    ],
-  });
+    const streamUrl = await getYouTubeStreamUrl(videoId);
+
+    res.json({
+        streams: [{
+            url: streamUrl,
+            title: `YouTube - ${channel.name}`,
+            name: "HD"
+        }]
+    });
 });
 
 // ROUTE: reload database
-app.post("/reload", (req, res) => {
-  userConfig.channels = processMetaDatabase();
-  updateManifest();
-  res.json({ success: true, message: "Database ricaricato" });
+app.post('/reload', (req, res) => {
+    userConfig.channels = processMetaDatabase();
+    updateManifest();
+    res.json({
+        success: true,
+        message: "Database ricaricato",
+        channels: userConfig.channels.length,
+        totalVideos: userConfig.channels.reduce((total, ch) => total + ch.videos.length, 0)
+    });
 });
 
 // ROUTE: health check
-app.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    channels: userConfig.channels.length,
-    totalVideos: userConfig.channels.reduce((total, ch) => total + ch.videos.length, 0),
-    version: "1.0.0",
-  });
+app.get('/health', (req, res) => {
+    res.json({
+        status: "OK",
+        channels: userConfig.channels.length,
+        totalVideos: userConfig.channels.reduce((total, ch) => total + ch.videos.length, 0),
+        version: "1.0.0"
+    });
 });
 
-// ROUTE: semplice dashboard
-app.get("/", (req, res) => {
-  res.send(`<html><body>
-    <h1>Dakids Addon</h1>
-    <p>Stremio Manifest: <a href="/manifest.json">/manifest.json</a></p>
-    <p>Ricarica database: <a href="/reload">/reload</a></p>
-  </body></html>`);
+// ROUTE: Dashboard web
+app.get('/', (req, res) => {
+    res.send(`<html><body>
+        <h1>Dakids Addon</h1>
+        <p>Stremio Manifest: <a href="/manifest.json">/manifest.json</a></p>
+        <p>Ricarica database: <a href="/reload">/reload</a></p>
+        </body></html>`);
 });
 
 // Avvio server
 app.listen(PORT, () => {
-  console.log(`🎬 Dakids Addon avviato su port ${PORT}`);
+    console.log(`🎬 Dakids Addon avviato su http://localhost:${PORT}`);
 });
