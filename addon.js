@@ -214,4 +214,8 @@ app.get('/', (req, res) => {
 // Avvio server
 app.listen(PORT, () => {
     console.log(`🎬 Dakids Addon avviato su http://localhost:${PORT}`);
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> a32d1ac381b7569eff2f01f0848b4858ba1c195b

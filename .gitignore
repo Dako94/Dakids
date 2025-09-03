@@ -20,6 +20,8 @@ videos/
 
 # Variabili d'ambiente
 .env
+cookies.txt
+
 
 # Build o cache
 dist/
@@ -29,3 +31,4 @@ dist/
 .vscode/
 .idea/
 *.iml
+
