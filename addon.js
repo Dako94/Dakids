@@ -3,7 +3,8 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import { YtDlpWrap } from "yt-dlp-wrap";
+import pkg from "yt-dlp-wrap";
+const { YtDlpWrap } = pkg;
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
