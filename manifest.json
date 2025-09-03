@@ -1,12 +1,12 @@
-const manifest = {
-    "id": "com.dakids.Stremio",
-    "version": "2.0.0",
-    "name": "Dakids",
-    "description": "Video per bambini - Addon pronto all'uso con metadata completi",
-    "logo": "/media/icon.png",
-    "background": "/media/background.jpg",
-    "resources": ["catalog", "stream"],
-    "types": ["movie"],
-    "idPrefixes": ["dakids-"],
-    "catalogs": []
-};
+{
+  "id": "com.dakids.Stremio",
+  "version": "2.0.0",
+  "name": "Dakids",
+  "description": "Video per bambini - Addon pronto all'uso con metadata completi",
+  "logo": "/media/icon.png",
+  "background": "/media/background.jpg",
+  "resources": ["catalog", "stream"],
+  "types": ["movie"],
+  "idPrefixes": ["dakids-"],
+  "catalogs": []
+}
