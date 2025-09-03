@@ -3,8 +3,7 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import pkg from "yt-dlp-wrap";
-const YtDlpWrap = pkg.default; // Import corretto per CommonJS
+import { YtDlpWrap } from "yt-dlp-wrap";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -21,19 +20,82 @@ const PORT = process.env.PORT || 7000;
 const VIDEO_DIR = path.join(__dirname, 'videos');
 if (!fs.existsSync(VIDEO_DIR)) fs.mkdirSync(VIDEO_DIR);
 
+// Cartella media per file statici
+const MEDIA_DIR = path.join(__dirname, 'media');
+if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR);
+
 // Servi file statici (logo, background e video)
-app.use('/media', express.static(path.join(__dirname, 'media')));
+app.use('/media', express.static(MEDIA_DIR));
 app.use('/videos', express.static(VIDEO_DIR));
 
-// Leggi il file JSON con i metadata
-const metaData = JSON.parse(fs.readFileSync(path.join(__dirname, 'meta.json'), 'utf-8'));
+// Crea file placeholder se non esistono
+const createPlaceholderFiles = () => {
+    const iconPath = path.join(MEDIA_DIR, 'icon.png');
+    const backgroundPath = path.join(MEDIA_DIR, 'background.jpg');
+    
+    if (!fs.existsSync(iconPath)) {
+        // Crea un file placeholder vuoto
+        fs.writeFileSync(iconPath, '');
+    }
+    
+    if (!fs.existsSync(backgroundPath)) {
+        // Crea un file placeholder vuoto
+        fs.writeFileSync(backgroundPath, '');
+    }
+};
+
+createPlaceholderFiles();
+
+// Leggi il file JSON con i metadata (con fallback)
+let metaData = [];
+const metaPath = path.join(__dirname, 'meta.json');
+
+if (fs.existsSync(metaPath)) {
+    try {
+        metaData = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+    } catch (err) {
+        console.error('⚠️ Errore nel leggere meta.json:', err.message);
+        // Crea dati di esempio
+        metaData = [
+            {
+                id: "dQw4w9WgXcQ",
+                url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                title: "Video di Test",
+                channelName: "Canale Test",
+                duration: "3:32",
+                viewCount: 1000,
+                likes: 100,
+                date: "2025-01-01"
+            }
+        ];
+    }
+} else {
+    console.warn('⚠️ File meta.json non trovato, creo dati di esempio');
+    // Crea dati di esempio
+    metaData = [
+        {
+            id: "dQw4w9WgXcQ",
+            url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            title: "Video di Test",
+            channelName: "Canale Test",
+            duration: "3:32",
+            viewCount: 1000,
+            likes: 100,
+            date: "2025-01-01"
+        }
+    ];
+    
+    // Salva il file di esempio
+    fs.writeFileSync(metaPath, JSON.stringify(metaData, null, 2));
+}
 
 // Raggruppa i video per canale
 function groupVideosByChannel(videos) {
     const channels = {};
     videos.forEach(video => {
-        if (!channels[video.channelName]) channels[video.channelName] = [];
-        channels[video.channelName].push(video);
+        const channelName = video.channelName || 'Canale Sconosciuto';
+        if (!channels[channelName]) channels[channelName] = [];
+        channels[channelName].push(video);
     });
     return { channels };
 }
@@ -48,15 +110,15 @@ function processMetaDatabase() {
             channels.push({
                 name: channelName,
                 videos: videos.map(video => ({
-                    id: video.id.replace(/^_/, ''), // rimuove underscore iniziale
-                    url: video.url,
-                    title: video.title,
+                    id: video.id ? video.id.replace(/^_/, '') : 'unknown',
+                    url: video.url || `https://www.youtube.com/watch?v=${video.id}`,
+                    title: video.title || 'Titolo Sconosciuto',
                     thumbnail: `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`,
-                    description: `${video.title} - ${video.viewCount || 0} visualizzazioni`,
-                    duration: video.duration,
+                    description: `${video.title || 'Video'} - ${video.viewCount || 0} visualizzazioni`,
+                    duration: video.duration || '0:00',
                     viewCount: video.viewCount || 0,
                     likes: video.likes || 0,
-                    date: video.date
+                    date: video.date || '2025-01-01'
                 }))
             });
         }
@@ -68,31 +130,51 @@ function processMetaDatabase() {
 let userConfig = { channels: processMetaDatabase() };
 
 // Inizializza yt-dlp-wrap
-const ytdlp = new YtDlpWrap();
+let ytdlp;
+try {
+    ytdlp = new YtDlpWrap();
+} catch (err) {
+    console.error('⚠️ Errore nell\'inizializzare yt-dlp-wrap:', err.message);
+}
 
-// Funzione per ottenere lo stream diretto da YouTube usando cookies
+// Funzione per ottenere lo stream diretto da YouTube
 async function getYouTubeStreamUrl(videoId) {
+    if (!ytdlp) {
+        console.error('❌ yt-dlp non disponibile');
+        return `https://www.youtube.com/watch?v=${videoId}`;
+    }
+
     try {
-        // Leggi cookies dalla variabile d'ambiente o dal file cookies.txt
-        const cookies = process.env.YOUTUBE_COOKIES || (fs.existsSync('./cookies.txt') ? fs.readFileSync('./cookies.txt', 'utf-8') : '');
-        const cookieHeader = cookies ? cookies.split('\n').map(c => c.trim()).join('; ') : null;
+        let cookiesFile = './cookies.txt';
+        if (process.env.YOUTUBE_COOKIES_PATH) {
+            cookiesFile = process.env.YOUTUBE_COOKIES_PATH;
+        }
 
-        const info = await ytdlp.execPromise(`https://www.youtube.com/watch?v=${videoId}`, [
-            '--dump-single-json',
-            '--no-check-certificate',
+        const args = [
+            '-j', // JSON output
             '--no-warnings',
-            '--prefer-free-formats',
-            ...(cookieHeader ? [`--add-header`, `cookie: ${cookieHeader}`] : []),
-            '--add-header', 'referer:youtube.com',
-            '--add-header', 'user-agent:googlebot'
-        ]);
+            '--no-check-certificate',
+            '--prefer-free-formats'
+        ];
 
-        const data = JSON.parse(info);
-        const format = data.formats.find(f => f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none');
+        if (fs.existsSync(cookiesFile)) {
+            args.push(`--cookies=${cookiesFile}`);
+        }
 
+        const infoRaw = await ytdlp.execPromise(`https://www.youtube.com/watch?v=${videoId}`, args);
+        const info = JSON.parse(infoRaw);
+
+        const format = info.formats.find(f => 
+            f.ext === 'mp4' && f.acodec !== 'none' && f.vcodec !== 'none'
+        );
+        
         if (format && format.url) {
             console.log(`✅ Stream trovato per ${videoId}`);
-            fs.writeFileSync(path.join(__dirname, "last_stream_url.txt"), format.url, "utf-8");
+            try {
+                fs.writeFileSync(path.join(__dirname, "last_stream_url.txt"), format.url, "utf-8");
+            } catch (writeErr) {
+                console.warn('⚠️ Impossibile scrivere last_stream_url.txt');
+            }
             return format.url;
         }
 
@@ -104,41 +186,49 @@ async function getYouTubeStreamUrl(videoId) {
     }
 }
 
-// Manifest Stremio
-const manifest = {
-    id: "com.dakids.Stremio",
-    version: "2.0.0",
-    name: "Dakids",
-    description: "Video per bambini - Addon pronto all'uso con metadata completi",
-    logo: "/media/icon.png",
-    background: "/media/background.jpg",
-    resources: ["catalog", "stream"],
-    types: ["movie"],
-    idPrefixes: ["dakids-"],
-    catalogs: []
-};
-
-function updateManifest() {
-    manifest.catalogs = userConfig.channels.map((channel, index) => ({
-        type: "movie",
-        id: `channel-${index}`,
-        name: channel.name,
-        poster: channel.videos[0]?.thumbnail,
-        background: channel.videos[0]?.thumbnail,
-        genres: ["Bambini", "Animazione", "Educativo"]
-    }));
+// Ottieni l'URL base dinamico
+function getBaseUrl(req) {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers.host;
+    return `${protocol}://${host}`;
 }
 
-updateManifest();
+// Manifest Stremio
+function getManifest(req) {
+    const baseUrl = getBaseUrl(req);
+    
+    return {
+        id: "com.dakids.stremio",
+        version: "2.0.0",
+        name: "Dakids",
+        description: "Video per bambini - Addon pronto all'uso con metadata completi",
+        logo: `${baseUrl}/media/icon.png`,
+        background: `${baseUrl}/media/background.jpg`,
+        resources: ["catalog", "stream"],
+        types: ["movie"],
+        idPrefixes: ["dakids-"],
+        catalogs: userConfig.channels.map((channel, index) => ({
+            type: "movie",
+            id: `channel-${index}`,
+            name: channel.name,
+            extra: []
+        }))
+    };
+}
 
 // ROUTE: manifest.json
-app.get('/manifest.json', (req, res) => res.json(manifest));
+app.get('/manifest.json', (req, res) => {
+    res.json(getManifest(req));
+});
 
-// ROUTE: catalogo
-app.get('/catalog/movie/channel_:index.json', (req, res) => {
+// ROUTE: catalogo - FIX: usa il formato corretto
+app.get('/catalog/movie/channel-:index.json', (req, res) => {
     const index = parseInt(req.params.index);
     const channel = userConfig.channels[index];
-    if (!channel) return res.json({ metas: [] });
+    
+    if (!channel) {
+        return res.json({ metas: [] });
+    }
 
     const metas = channel.videos.map((video, videoIndex) => ({
         id: `dakids-${index}-${video.id}`,
@@ -150,9 +240,8 @@ app.get('/catalog/movie/channel_:index.json', (req, res) => {
         description: video.description,
         genres: ["Bambini", channel.name],
         releaseInfo: video.date ? new Date(video.date).getFullYear().toString() : "2025",
-        runtime: parseInt(video.duration.split(':')[1]) || 7,
-        popularity: video.viewCount || (videoIndex + 1),
-        isMovie: true
+        runtime: video.duration ? Math.max(parseInt(video.duration.split(':')[0]) * 60 + parseInt(video.duration.split(':')[1] || 0), 1) : 7,
+        imdbRating: Math.min(8.5 + (video.likes / 10000), 9.9).toFixed(1)
     }));
 
     res.json({ metas });
@@ -162,17 +251,25 @@ app.get('/catalog/movie/channel_:index.json', (req, res) => {
 app.get('/stream/movie/:metaId.json', async (req, res) => {
     const metaId = req.params.metaId;
     const match = metaId.match(/^dakids-(\d+)-(.+)$/);
-    if (!match) return res.json({ streams: [] });
+    
+    if (!match) {
+        return res.json({ streams: [] });
+    }
 
     const channelIndex = parseInt(match[1]);
     const videoId = match[2];
     const channel = userConfig.channels[channelIndex];
-    if (!channel) return res.json({ streams: [] });
+    
+    if (!channel) {
+        return res.json({ streams: [] });
+    }
 
     const video = channel.videos.find(v => v.id === videoId);
-    if (!video) return res.json({ streams: [] });
+    if (!video) {
+        return res.json({ streams: [] });
+    }
 
-    console.log("[STREAM REQUEST]", metaId, "=>", channelIndex, videoId);
+    console.log(`[STREAM REQUEST] ${metaId} => Channel: ${channelIndex}, Video: ${videoId}`);
 
     const streamUrl = await getYouTubeStreamUrl(videoId);
 
@@ -180,21 +277,41 @@ app.get('/stream/movie/:metaId.json', async (req, res) => {
         streams: [{
             url: streamUrl,
             title: `YouTube - ${channel.name}`,
-            name: "HD"
+            name: "HD",
+            behaviorHints: {
+                notWebReady: true
+            }
         }]
     });
 });
 
 // ROUTE: reload database
 app.post('/reload', (req, res) => {
-    userConfig.channels = processMetaDatabase();
-    updateManifest();
-    res.json({
-        success: true,
-        message: "Database ricaricato",
-        channels: userConfig.channels.length,
-        totalVideos: userConfig.channels.reduce((total, ch) => total + ch.videos.length, 0)
-    });
+    try {
+        // Rileggi il file meta.json
+        if (fs.existsSync(metaPath)) {
+            metaData = JSON.parse(fs.readFileSync(metaPath, 'utf-8'));
+            const newMetaDatabase = groupVideosByChannel(metaData);
+            userConfig.channels = processMetaDatabase();
+            
+            res.json({
+                success: true,
+                message: "Database ricaricato con successo",
+                channels: userConfig.channels.length,
+                totalVideos: userConfig.channels.reduce((total, ch) => total + ch.videos.length, 0)
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: "File meta.json non trovato"
+            });
+        }
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            message: `Errore nel ricaricare il database: ${err.message}`
+        });
+    }
 });
 
 // ROUTE: health check
@@ -203,20 +320,99 @@ app.get('/health', (req, res) => {
         status: "OK",
         channels: userConfig.channels.length,
         totalVideos: userConfig.channels.reduce((total, ch) => total + ch.videos.length, 0),
-        version: "1.0.0"
+        version: "2.0.0",
+        ytdlpAvailable: !!ytdlp
     });
 });
 
-// ROUTE: Dashboard web
+// ROUTE: info sui canali
+app.get('/channels', (req, res) => {
+    res.json({
+        channels: userConfig.channels.map((channel, index) => ({
+            index,
+            name: channel.name,
+            videoCount: channel.videos.length,
+            catalogUrl: `/catalog/movie/channel-${index}.json`
+        }))
+    });
+});
+
+// ROUTE: Dashboard web migliorata
 app.get('/', (req, res) => {
-    res.send(`<html><body>
-        <h1>Dakids Addon</h1>
-        <p>Stremio Manifest: <a href="/manifest.json">/manifest.json</a></p>
-        <p>Ricarica database: <a href="/reload">/reload</a></p>
-        </body></html>`);
+    const baseUrl = getBaseUrl(req);
+    const channelsList = userConfig.channels.map((channel, index) => 
+        `<li><strong>${channel.name}</strong> (${channel.videos.length} video) - 
+         <a href="/catalog/movie/channel-${index}.json">Catalogo</a></li>`
+    ).join('');
+    
+    res.send(`
+    <html>
+    <head>
+        <title>Dakids Addon</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .container { max-width: 800px; margin: 0 auto; }
+            .status { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }
+            .links a { margin-right: 15px; padding: 8px 12px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; }
+            .links a:hover { background: #0056b3; }
+            ul { line-height: 1.6; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🎬 Dakids Addon</h1>
+            
+            <div class="status">
+                <strong>Status:</strong> Online ✅<br>
+                <strong>Canali:</strong> ${userConfig.channels.length}<br>
+                <strong>Video totali:</strong> ${userConfig.channels.reduce((total, ch) => total + ch.videos.length, 0)}<br>
+                <strong>yt-dlp:</strong> ${ytdlp ? 'Disponibile' : 'Non disponibile'}
+            </div>
+            
+            <div class="links">
+                <a href="/manifest.json">📋 Manifest</a>
+                <a href="/health">❤️ Health Check</a>
+                <a href="/channels">📺 Canali</a>
+            </div>
+            
+            <h3>Canali Disponibili:</h3>
+            <ul>${channelsList}</ul>
+            
+            <p><small>Per usare questo addon in Stremio, copia questo URL: <code>${baseUrl}/manifest.json</code></small></p>
+        </div>
+    </body>
+    </html>`);
+});
+
+// Middleware per gestire errori 404
+app.use((req, res) => {
+    res.status(404).json({
+        error: "Endpoint non trovato",
+        path: req.path,
+        availableEndpoints: [
+            "/manifest.json",
+            "/catalog/movie/channel-{index}.json",
+            "/stream/movie/{metaId}.json",
+            "/health",
+            "/channels",
+            "/reload (POST)"
+        ]
+    });
+});
+
+// Middleware per gestire errori generali
+app.use((err, req, res, next) => {
+    console.error('Errore del server:', err);
+    res.status(500).json({
+        error: "Errore interno del server",
+        message: err.message
+    });
 });
 
 // Avvio server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🎬 Dakids Addon avviato su http://0.0.0.0:${PORT}`);
+    console.log(`📋 Manifest disponibile su: http://0.0.0.0:${PORT}/manifest.json`);
+    console.log(`📊 Dashboard: http://0.0.0.0:${PORT}/`);
+    console.log(`📺 Canali configurati: ${userConfig.channels.length}`);
 });
