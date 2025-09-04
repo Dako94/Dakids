@@ -76,7 +76,7 @@ function processMetaDatabase(videos, channelName) {
 }
 
 // ==========================
-// Manifest
+// Manifest (ESSENZIALE per Stremio)
 // ==========================
 app.get("/manifest.json", (req, res) => {
     res.json({
@@ -91,50 +91,66 @@ app.get("/manifest.json", (req, res) => {
             id: `channel-${index}`,
             name: channel.name,
             extra: []
-        }))
+        })),
+        // Aggiungi questi campi richiesti da Stremio
+        idPrefixes: ["tt"],
+        background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
+        logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
     });
 });
 
 // ==========================
-// Cataloghi
+// ENDPOINT CATALOGO (richiesto da Stremio)
 // ==========================
-app.get("/catalog/:type/:id.json", (req, res) => {
-    const { type, id } = req.params;
-    if (type !== "movie") return res.status(404).send("Catalogo non trovato");
-
-    const index = parseInt(id.replace("channel-", ""));
+app.get("/catalog/movie/channel-:index.json", (req, res) => {
+    const index = parseInt(req.params.index);
     const channel = userConfig.channels[index];
-    if (!channel) return res.status(404).send("Canale non trovato");
+    
+    if (!channel) {
+        return res.status(404).json({ error: "Canale non trovato" });
+    }
 
     const channelMeta = metaDatabase.find(m => m.id === channel.id);
-    if (!channelMeta) return res.status(404).send("Nessun meta disponibile");
+    if (!channelMeta) {
+        return res.status(404).json({ error: "Nessun meta disponibile" });
+    }
 
     const metas = processMetaDatabase(channelMeta.metas, channel.name);
     res.json({ metas });
 });
 
+// ENDPOINT ALTERNATIVO (alcune versioni di Stremio usano questo formato)
+app.get("/catalog/movie.json", (req, res) => {
+    // Restituisce il primo canale come default
+    const channelMeta = metaDatabase[0];
+    if (!channelMeta) {
+        return res.status(404).json({ error: "Nessun meta disponibile" });
+    }
+
+    const metas = processMetaDatabase(channelMeta.metas, userConfig.channels[0].name);
+    res.json({ metas });
+});
+
 // ==========================
-// Stream (corretto)
+// ENDPOINT STREAM (richiesto da Stremio)
 // ==========================
-app.get("/stream/:type/:metaId.json", (req, res) => {
-    const { type, metaId } = req.params;
-    if (type !== "movie") return res.status(404).send("Stream non trovato");
+app.get("/stream/movie/:metaId.json", (req, res) => {
+    const metaId = req.params.metaId;
 
     const match = metaId.match(/^dakids-(\d+)-(.+)$/);
-    if (!match) return res.status(404).send("ID non valido");
+    if (!match) return res.status(404).json({ error: "ID non valido" });
 
     const index = parseInt(match[1]);
     const encodedVideoId = match[2];
 
     const channel = userConfig.channels[index];
-    if (!channel) return res.status(404).send("Canale non trovato");
+    if (!channel) return res.status(404).json({ error: "Canale non trovato" });
 
     const channelMeta = metaDatabase.find(m => m.id === channel.id);
-    if (!channelMeta) return res.status(404).send("Metadati non trovati");
+    if (!channelMeta) return res.status(404).json({ error: "Metadati non trovati" });
 
-    // Cerca il video usando l'ID encoded (come è stato salvato nel catalogo)
     const video = channelMeta.metas.find(v => safeId(v.id) === encodedVideoId);
-    if (!video) return res.status(404).send("Video non trovato");
+    if (!video) return res.status(404).json({ error: "Video non trovato" });
 
     res.json({
         streams: [
@@ -144,6 +160,74 @@ app.get("/stream/:type/:metaId.json", (req, res) => {
             }
         ]
     });
+});
+
+// ==========================
+// ENDPOINT DI SUPPORTO PER STREMIO
+// ==========================
+app.get("/:resource/:type/:id.json", (req, res) => {
+    const { resource, type, id } = req.params;
+    
+    if (resource === "catalog" && type === "movie") {
+        if (id.startsWith("channel-")) {
+            const index = parseInt(id.replace("channel-", ""));
+            const channel = userConfig.channels[index];
+            
+            if (!channel) return res.status(404).json({ error: "Canale non trovato" });
+
+            const channelMeta = metaDatabase.find(m => m.id === channel.id);
+            if (!channelMeta) return res.status(404).json({ error: "Nessun meta disponibile" });
+
+            const metas = processMetaDatabase(channelMeta.metas, channel.name);
+            return res.json({ metas });
+        }
+    }
+    
+    if (resource === "stream" && type === "movie") {
+        const match = id.match(/^dakids-(\d+)-(.+)$/);
+        if (!match) return res.status(404).json({ error: "ID non valido" });
+
+        const index = parseInt(match[1]);
+        const encodedVideoId = match[2];
+
+        const channel = userConfig.channels[index];
+        if (!channel) return res.status(404).json({ error: "Canale non trovato" });
+
+        const channelMeta = metaDatabase.find(m => m.id === channel.id);
+        if (!channelMeta) return res.status(404).json({ error: "Metadati non trovati" });
+
+        const video = channelMeta.metas.find(v => safeId(v.id) === encodedVideoId);
+        if (!video) return res.status(404).json({ error: "Video non trovato" });
+
+        return res.json({
+            streams: [
+                {
+                    title: "YouTube",
+                    url: `https://www.youtube.com/watch?v=${video.id}`
+                }
+            ]
+        });
+    }
+
+    res.status(404).json({ error: "Endpoint non trovato" });
+});
+
+// ==========================
+// Health Check (importante per Stremio)
+// ==========================
+app.get("/health", (req, res) => {
+    res.json({ 
+        status: "OK", 
+        timestamp: new Date().toISOString(),
+        videos: metaDatabase.reduce((sum, c) => sum + c.metas.length, 0)
+    });
+});
+
+// ==========================
+// Root endpoint
+// ==========================
+app.get("/", (req, res) => {
+    res.redirect("/manifest.json");
 });
 
 // ==========================
@@ -165,59 +249,6 @@ app.get("/debug", (req, res) => {
 });
 
 // ==========================
-// Health Check
-// ==========================
-app.get("/health", (req, res) => {
-    res.json({ status: "OK", timestamp: new Date().toISOString() });
-});
-
-// ==========================
-// Dashboard Web
-// ==========================
-app.get("/", (req, res) => {
-    const totalVideos = metaDatabase.reduce((sum, c) => sum + c.metas.length, 0);
-
-    res.send(`
-    <html>
-    <head>
-        <title>Dakids Addon</title>
-        <style>
-            body { font-family: Arial, sans-serif; background: #fff; padding: 20px; }
-            h1 { color: #333; }
-            .channel { margin-bottom: 15px; }
-            .status { color: green; font-weight: bold; }
-            .btn { display:inline-block; margin:5px; padding:6px 12px; background:#007bff; color:white; text-decoration:none; border-radius:4px;}
-        </style>
-    </head>
-    <body>
-        <h1>📺 Dakids Addon</h1>
-        <p><b>Status:</b> <span class="status">Online ✅</span></p>
-        <p><b>Canali:</b> ${userConfig.channels.length}</p>
-        <p><b>Video totali:</b> ${totalVideos}</p>
-        <p><b>yt-dlp:</b> Non disponibile</p>
-
-        <div>
-            <a class="btn" href="/manifest.json">📜 Manifest</a>
-            <a class="btn" href="/health">❤️ Health Check</a>
-            <a class="btn" href="/debug">🐛 Debug Info</a>
-        </div>
-
-        <h2>Canali Disponibili:</h2>
-        ${userConfig.channels.map((channel, index) => `
-            <div class="channel">
-                <b>${channel.name}</b> (${metaDatabase[index]?.metas.length || 0} video)
-                - <a href="/catalog/movie/channel-${index}.json" target="_blank">Catalogo</a>
-            </div>
-        `).join("")}
-
-        <hr>
-        <p>Per usare questo addon in Stremio, copia questo URL:<br>
-        <code>https://${req.hostname}/manifest.json</code></p>
-    </body>
-    </html>`);
-});
-
-// ==========================
 // Error Handling
 // ==========================
 app.use((req, res) => {
@@ -235,4 +266,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Dakids Addon in ascolto su http://localhost:${PORT}`);
-});                
+    console.log(`Manifest: http://localhost:${PORT}/manifest.json`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+    console.log(`Debug: http://localhost:${PORT}/debug`);
+});
