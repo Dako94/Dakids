@@ -123,8 +123,10 @@ function getStreamUrl(videoId, callback) {
     });
 }
 
-// Manifest
+// Manifest - URL assoluto per Render
 app.get("/manifest.json", (req, res) => {
+    const baseUrl = `https://${req.hostname}`;
+    
     res.json({
         id: "dakids-addon",
         version: "1.0.0",
@@ -204,7 +206,7 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
                 }]
             });
         } else {
-            console.log(`📺 Stream URL: ${streamUrl}`);
+            console.log(`📺 Stream URL obtained`);
             res.json({
                 streams: [{
                     title: "Direct Stream",
@@ -252,8 +254,6 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
-    console.log(`📜 Manifest: http://localhost:${PORT}/manifest.json`);
     
     const hasCookies = fs.existsSync(cookiesPath);
     console.log(`🍪 Cookies: ${hasCookies ? '✅ Found' : '❌ Not found'}`);
