@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import express from "express";
 import cors from "cors";
 import fs from "fs";
@@ -30,6 +31,36 @@ function formatDate(date) {
   return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 }
 
+// HOMEPAGE
+app.get("/", (req, res) => {
+  res.send(`
+    <h1>📺 Dakids TV Addon</h1>
+    <p>Status: ✅ Online</p>
+    <p>Video disponibili: ${allVideos.length}</p>
+    <ul>
+      <li><a href="/manifest.json">Manifest</a></li>
+      <li><a href="/catalog/movie/dakids-catalog.json">Catalogo</a></li>
+      <li><a href="/health">Health</a></li>
+    </ul>
+  `);
+});
+
+// MANIFEST
+app.get("/manifest.json", (req, res) => {
+  res.json({
+    id: "dakids.addon",
+    version: "1.0.0",
+    name: "Dakids TV",
+    description: "Cartoni animati per bambini",
+    resources: ["catalog", "stream"],
+    types: ["movie"],
+    catalogs: [
+      { type: "movie", id: "dakids-catalog", name: "Cartoni e Video per Bambini" }
+    ],
+    idPrefixes: ["dakids-"]
+  });
+});
+
 // CATALOGO STREMIO
 app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   const metas = allVideos.map(video => ({
@@ -38,7 +69,13 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
     name: video.title,
     poster: video.thumbnail,
     background: video.thumbnail,
-    description: `${video.title}\n\n👀 ${video.viewCount} visualizzazioni\n⏱️ ${video.duration}\nCanale: ${video.channelName}`,
+    description: `
+      ${video.title}
+      👀 ${video.viewCount} visualizzazioni
+      ❤️ ${video.likes} likes
+      ⏱️ Durata: ${video.duration}
+      Canale: ${video.channelName}
+    `,
     runtime: durationToMinutes(video.duration),
     released: formatDate(video.date),
     genres: ["Animation", "Kids"],
@@ -63,26 +100,12 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
   });
 });
 
-// MANIFEST
-app.get("/manifest.json", (req, res) => {
-  res.json({
-    id: "dakids.addon",
-    version: "1.0.0",
-    name: "Dakids TV",
-    description: "Cartoni animati per bambini",
-    resources: ["catalog", "stream"],
-    types: ["movie"],
-    catalogs: [
-      { type: "movie", id: "dakids-catalog", name: "Cartoni e Video per Bambini" }
-    ],
-    idPrefixes: ["dakids-"]
-  });
-});
-
+// HEALTH CHECK
 app.get("/health", (req, res) => {
   res.json({ status: "OK", videos: allVideos.length });
 });
 
+// AVVIO SERVER
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Dakids Addon running on port", PORT);
