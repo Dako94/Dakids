@@ -82,7 +82,7 @@ app.get("/manifest.json", (req, res) => {
             id: `channel-${index}`,
             name: channel.name
         })),
-        idPrefixes: ["tt"],
+        idPrefixes: ["dakids"],
         background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
         logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
     });
