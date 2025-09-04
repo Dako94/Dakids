@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import express from "express";
 import cors from "cors";
 import fs from "fs";
@@ -7,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ LETTURA METADATA DA FILE
+// LETTURA METADATA
 let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
@@ -17,27 +16,21 @@ try {
   console.error("❌ Errore nella lettura di meta.json:", err);
 }
 
-// ✅ MANIFEST PER STREMIO
-app.get("/manifest.json", (req, res) => {
-  res.json({
-    id: "dakids.addon",
-    version: "1.0.0",
-    name: "Dakids TV",
-    description: "Cartoni animati per bambini",
-    resources: ["catalog", "stream"],
-    types: ["movie"],
-    catalogs: [
-      {
-        type: "movie",
-        id: "dakids-catalog",
-        name: "Cartoni e Video per Bambini"
-      }
-    ],
-    idPrefixes: ["dakids-"]
-  });
-});
+// FUNZIONE DI CONVERSIONE DURATA IN MINUTI
+function durationToMinutes(duration) {
+  const parts = duration.split(":").map(Number);
+  if (parts.length === 3) return parts[0]*60 + parts[1] + parts[2]/60;
+  if (parts.length === 2) return parts[0] + parts[1]/60;
+  return parseFloat(duration) || 0;
+}
 
-// ✅ CATALOGO PER STREMIO
+// CONVERSIONE DATA ISO
+function formatDate(date) {
+  // date = "20250901" -> "2025-09-01"
+  return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
+}
+
+// CATALOGO STREMIO
 app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   const metas = allVideos.map(video => ({
     id: video.id,
@@ -46,8 +39,8 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
     poster: video.thumbnail,
     background: video.thumbnail,
     description: `${video.title}\n\n👀 ${video.viewCount} visualizzazioni\n⏱️ ${video.duration}\nCanale: ${video.channelName}`,
-    runtime: video.duration,
-    released: video.date,
+    runtime: durationToMinutes(video.duration),
+    released: formatDate(video.date),
     genres: ["Animation", "Kids"],
     imdbRating: "7.5"
   }));
@@ -55,7 +48,7 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   res.json({ metas });
 });
 
-// ✅ STREAM PER STREMIO
+// STREAM
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
   const video = allVideos.find(v => v.id === videoId);
@@ -70,45 +63,27 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
   });
 });
 
-// ✅ HEALTH CHECK
-app.get("/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
-    videos: allVideos.length,
-    message: "Dakids Addon is running"
+// MANIFEST
+app.get("/manifest.json", (req, res) => {
+  res.json({
+    id: "dakids.addon",
+    version: "1.0.0",
+    name: "Dakids TV",
+    description: "Cartoni animati per bambini",
+    resources: ["catalog", "stream"],
+    types: ["movie"],
+    catalogs: [
+      { type: "movie", id: "dakids-catalog", name: "Cartoni e Video per Bambini" }
+    ],
+    idPrefixes: ["dakids-"]
   });
 });
 
-// ✅ HOMEPAGE
-app.get("/", (req, res) => {
-  const protocol = req.get('x-forwarded-proto') || req.protocol;
-  const host = req.get('host');
-  const baseUrl = `${protocol}://${host}`;
-  
-  const html = `
-  <!DOCTYPE html>
-  <html lang="it">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dakids TV Addon</title>
-  </head>
-  <body>
-    <h1>📺 Dakids TV Addon</h1>
-    <p>Status: ✅ Online</p>
-    <p>Videos: ${allVideos.length}</p>
-    <p>Manifest: <a href="${baseUrl}/manifest.json">${baseUrl}/manifest.json</a></p>
-    <p>Catalog: <a href="${baseUrl}/catalog/movie/dakids-catalog.json">${baseUrl}/catalog/movie/dakids-catalog.json</a></p>
-    <p>Health: <a href="${baseUrl}/health">${baseUrl}/health</a></p>
-  </body>
-  </html>`;
-  
-  res.send(html);
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", videos: allVideos.length });
 });
 
-// ✅ AVVIO SERVER
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Dakids Addon running on port", PORT);
-  console.log("📺 Videos disponibili:", allVideos.length);
 });
