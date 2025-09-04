@@ -20,8 +20,8 @@ try {
 // ===================== FUNZIONI DI UTILITÀ =====================
 function durationToMinutes(duration) {
   const parts = duration.split(":").map(Number);
-  if (parts.length === 3) return parts[0]*60 + parts[1] + parts[2]/60;
-  if (parts.length === 2) return parts[0] + parts[1]/60;
+  if (parts.length === 3) return parts[0] * 60 + parts[1] + parts[2] / 60;
+  if (parts.length === 2) return parts[0] + parts[1] / 60;
   return parseFloat(duration) || 0;
 }
 
@@ -52,11 +52,10 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
   const video = allVideos.find(v => v.id === videoId);
   if (!video) return res.status(404).json({ error: "Video not found" });
 
-  // YouTube già supportato da Stremio come externalUrl
   res.json({
     streams: [{
       title: video.title,
-      externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`
+      iframe: `<iframe width="1485" height="711" src="https://www.youtube.com/embed/${video.youtubeId}" title="${video.title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`
     }]
   });
 });
@@ -114,7 +113,7 @@ app.get("/", (req, res) => {
     <hr>
     <h2>I nostri video più recenti</h2>
     <div>`;
-  
+
   allVideos.slice(0, 10).forEach(video => {
     htmlContent += `
       <div class="video">
@@ -127,7 +126,7 @@ app.get("/", (req, res) => {
     </div>
   </body>
   </html>`;
-  
+
   res.send(htmlContent);
 });
 
