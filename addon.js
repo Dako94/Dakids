@@ -127,11 +127,13 @@ function getStreamUrl(videoId, callback) {
 
 // Manifest
 app.get("/manifest.json", (req, res) => {
+    const baseUrl = `https://${req.hostname}`;
+    
     res.json({
         id: "dakids-addon",
         version: "1.0.0",
-        name: "📺 Dakids Addon",
-        description: "Cartoni Pocoyo & Peppa Pig",
+        name: "📺 Dakids TV",
+        description: "Cartoni animati per bambini - Pocoyo & Peppa Pig",
         resources: ["catalog", "stream"],
         types: ["movie"],
         catalogs: userConfig.channels.map((channel, index) => ({
@@ -141,7 +143,8 @@ app.get("/manifest.json", (req, res) => {
         })),
         idPrefixes: ["tt"],
         background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
-        logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
+        logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
+        contactEmail: "dakids@example.com"
     });
 });
 
@@ -231,25 +234,175 @@ app.get("/health", (req, res) => {
     });
 });
 
-// Root
+// HTML in tema bimbi per la homepage
 app.get("/", (req, res) => {
     const hasCookies = fs.existsSync(cookiesPath);
     const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
-    
-    res.json({ 
-        message: "Dakids Addon Server", 
-        status: "running",
-        hasCookies: hasCookies,
-        ytDlpAvailable: !!ytDlpWrap,
-        version: "1.0.0",
-        channels: metaDatabase.length,
-        totalVideos: totalVideos,
-        endpoints: {
-            manifest: "/manifest.json",
-            health: "/health",
-            catalog: "/catalog/movie/channel-0.json"
-        }
-    });
+    const baseUrl = `https://${req.hostname}`;
+
+    const html = `
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>🎨 Dakids TV - Cartoni per Bambini</title>
+        <style>
+            body {
+                font-family: 'Comic Sans MS', cursive, sans-serif;
+                background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+                margin: 0;
+                padding: 20px;
+                min-height: 100vh;
+            }
+            .container {
+                max-width: 1000px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 20px;
+                padding: 30px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                border: 5px solid #ff6b6b;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+            .title {
+                color: #ff6b6b;
+                font-size: 3em;
+                margin: 0;
+                text-shadow: 2px 2px 0 #ffe66d;
+            }
+            .subtitle {
+                color: #4ecdc4;
+                font-size: 1.5em;
+                margin: 10px 0;
+            }
+            .status-badge {
+                display: inline-block;
+                padding: 8px 16px;
+                background: #4ecdc4;
+                color: white;
+                border-radius: 20px;
+                font-weight: bold;
+                margin: 10px 0;
+            }
+            .channel-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+                margin: 30px 0;
+            }
+            .channel-card {
+                background: linear-gradient(45deg, #ffe66d, #ff6b6b);
+                padding: 20px;
+                border-radius: 15px;
+                color: white;
+                text-align: center;
+                transition: transform 0.3s ease;
+            }
+            .channel-card:hover {
+                transform: translateY(-5px);
+            }
+            .channel-name {
+                font-size: 1.3em;
+                margin: 0 0 10px 0;
+            }
+            .channel-stats {
+                font-size: 1.1em;
+                margin: 5px 0;
+            }
+            .btn {
+                display: inline-block;
+                padding: 12px 24px;
+                background: #4ecdc4;
+                color: white;
+                text-decoration: none;
+                border-radius: 25px;
+                margin: 10px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+            }
+            .btn:hover {
+                background: #45b7aa;
+                transform: scale(1.05);
+            }
+            .footer {
+                text-align: center;
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 3px dotted #ffe66d;
+                color: #666;
+            }
+            .animal {
+                font-size: 2em;
+                margin: 0 5px;
+            }
+            .info-box {
+                background: #ffe66d;
+                padding: 15px;
+                border-radius: 15px;
+                margin: 20px 0;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 class="title">🎨 Dakids TV</h1>
+                <div class="subtitle">Cartoni animati per bambini</div>
+                <div class="status-badge">✅ Online e funzionante</div>
+            </div>
+
+            <div class="info-box">
+                <span class="animal">🐘</span>
+                <span class="animal">🦁</span>
+                <span class="animal">🐰</span>
+                <span class="animal">🐻</span>
+                <span class="animal">🐷</span>
+            </div>
+
+            <div class="channel-grid">
+                ${metaDatabase.map((channel, index) => `
+                    <div class="channel-card">
+                        <h3 class="channel-name">${channel.name}</h3>
+                        <div class="channel-stats">📺 ${channel.metas.length} video</div>
+                        <a href="/catalog/movie/channel-${index}.json" class="btn" target="_blank">
+                            Vedi Catalogo
+                        </a>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="/manifest.json" class="btn" target="_blank">📜 Manifest Stremio</a>
+                <a href="/health" class="btn" target="_blank">❤️ Health Check</a>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin: 20px 0;">
+                <h3 style="color: #ff6b6b; text-align: center;">📊 Statistiche</h3>
+                <div style="text-align: center;">
+                    <p>🎬 Video totali: <strong>${totalVideos}</strong></p>
+                    <p>📺 Canali: <strong>${metaDatabase.length}</strong></p>
+                    <p>🍪 Cookies: <strong>${hasCookies ? '✅ Presenti' : '❌ Assenti'}</strong></p>
+                    <p>📦 yt-dlp: <strong>${ytDlpWrap ? '✅ Disponibile' : '❌ Non disponibile'}</strong></p>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p>Per installare su Stremio, copia questo URL:</p>
+                <code style="background: #ffe66d; padding: 10px; border-radius: 10px; display: block; margin: 10px auto; max-width: 400px;">
+                    ${baseUrl}/manifest.json
+                </code>
+                <p>🎉 Divertiti con i cartoni animati! 🎉</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    res.send(html);
 });
 
 // Avvio server
