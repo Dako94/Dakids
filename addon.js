@@ -254,7 +254,10 @@ app.get("/test-catalog", (req, res) => {
             totalVideos: channel.metas.length,
             processedVideos: metas.length,
             sampleVideo: metas[0] || null,
-            allVideoIds: metas.map(m => m.id)
+            allVideoIds: metas.map(m => ({
+                stremioId: m.id,
+                youtubeId: m.originalYouTubeId
+            }))
         });
     } catch (error) {
         console.error("❌ Error in test-catalog:", error);
