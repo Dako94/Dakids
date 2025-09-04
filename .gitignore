@@ -21,7 +21,8 @@ videos/
 # Variabili d'ambiente
 .env
 cookies.txt
-
+package-lock.json
+youtube_scraper.py
 
 # Build o cache
 dist/
