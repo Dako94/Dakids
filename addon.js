@@ -55,7 +55,7 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
   res.json({
     streams: [{
       title: video.title,
-      externalUrl: `https://www.youtube.com/embed/${video.youtubeId}`
+      url: `https://www.youtube.com/watch?v=${video.youtubeId}`
     }]
   });
 });
@@ -87,7 +87,7 @@ app.get("/", (req, res) => {
   const host = req.get('host');
   const baseUrl = `${protocol}://${host}`;
 
-  const html = `
+  let htmlContent = `
   <!DOCTYPE html>
   <html lang="it">
   <head>
@@ -114,20 +114,21 @@ app.get("/", (req, res) => {
     <h2>I nostri video più recenti</h2>
     <div>`;
   
+  // Aggiungi i video dinamicamente
   allVideos.slice(0, 10).forEach(video => {
-    html += `
+    htmlContent += `
       <div class="video">
         <img src="${video.thumbnail}" alt="${video.title}">
         <div class="video-title">${video.title}</div>
       </div>`;
   });
 
-  html += `
+  htmlContent += `
     </div>
   </body>
   </html>`;
   
-  res.send(html);
+  res.send(htmlContent);
 });
 
 // ===================== SERVER =====================
@@ -135,4 +136,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Dakids Addon running on port", PORT);
   console.log(`📺 Video disponibili: ${allVideos.length}`);
+  console.log(`📜 Manifest: http://localhost:${PORT}/manifest.json`);
+  console.log(`📦 Catalog: http://localhost:${PORT}/catalog/movie/dakids-catalog.json`);
 });
