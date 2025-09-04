@@ -5,8 +5,9 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { spawn } from "child_process";
+import pkg from "yt-dlp-wrap";
 
+const { YtDlpWrap } = pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
@@ -26,6 +27,16 @@ const userConfig = {
         },
     ]
 };
+
+// Inizializza yt-dlp-wrap
+let ytDlpWrap;
+try {
+    ytDlpWrap = new YtDlpWrap();
+    console.log("✅ yt-dlp-wrap initialized");
+} catch (error) {
+    console.log("❌ yt-dlp-wrap initialization failed:", error.message);
+    ytDlpWrap = null;
+}
 
 // Verifica presenza cookies.txt
 const cookiesPath = path.join(__dirname, "cookies.txt");
@@ -80,8 +91,13 @@ function processMetaDatabase(videos, channelIndex) {
     }));
 }
 
-// Funzione per ottenere stream URL con yt-dlp e cookies
+// Funzione per ottenere stream URL con yt-dlp-wrap e cookies
 function getStreamUrl(videoId, callback) {
+    if (!ytDlpWrap) {
+        console.log("yt-dlp-wrap not available, using fallback");
+        return callback(null, `https://www.youtube.com/watch?v=${videoId}`);
+    }
+
     const args = [
         '-f', 'best[height<=720]',
         '--get-url',
@@ -93,40 +109,24 @@ function getStreamUrl(videoId, callback) {
         args.push('--cookies', cookiesPath);
     }
 
-    const ytDlp = spawn('yt-dlp', args);
-
-    let stdout = '';
-    let stderr = '';
-
-    ytDlp.stdout.on('data', (data) => {
-        stdout += data.toString();
-    });
-
-    ytDlp.stderr.on('data', (data) => {
-        stderr += data.toString();
-    });
-
-    ytDlp.on('close', (code) => {
-        if (code === 0 && stdout.trim()) {
-            callback(null, stdout.trim());
-        } else {
-            console.error(`yt-dlp error: ${stderr}`);
-            // Fallback al link YouTube diretto
+    ytDlpWrap.exec(args)
+        .then((output) => {
+            const streamUrl = output.join('').trim();
+            if (streamUrl) {
+                callback(null, streamUrl);
+            } else {
+                console.error("yt-dlp-wrap returned empty output");
+                callback(null, `https://www.youtube.com/watch?v=${videoId}`);
+            }
+        })
+        .catch((error) => {
+            console.error("yt-dlp-wrap error:", error);
             callback(null, `https://www.youtube.com/watch?v=${videoId}`);
-        }
-    });
-
-    ytDlp.on('error', (err) => {
-        console.error('yt-dlp execution error:', err);
-        // Fallback al link YouTube diretto
-        callback(null, `https://www.youtube.com/watch?v=${videoId}`);
-    });
+        });
 }
 
-// Manifest - URL assoluto per Render
+// Manifest
 app.get("/manifest.json", (req, res) => {
-    const baseUrl = `https://${req.hostname}`;
-    
     res.json({
         id: "dakids-addon",
         version: "1.0.0",
@@ -194,7 +194,7 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
 
     console.log(`✅ Found video: ${video.title}`);
 
-    // Usa yt-dlp per ottenere l'URL dello stream con cookies
+    // Usa yt-dlp-wrap per ottenere l'URL dello stream con cookies
     getStreamUrl(videoId, (error, streamUrl) => {
         if (error) {
             console.error("Error getting stream URL:", error);
@@ -209,7 +209,7 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
             console.log(`📺 Stream URL obtained`);
             res.json({
                 streams: [{
-                    title: "Direct Stream",
+                    title: streamUrl.includes('youtube.com') ? "YouTube" : "Direct Stream",
                     url: streamUrl
                 }]
             });
@@ -225,6 +225,7 @@ app.get("/health", (req, res) => {
         status: "OK", 
         totalVideos: allVideos.length,
         hasCookies: hasCookies,
+        ytDlpAvailable: !!ytDlpWrap,
         channels: metaDatabase.length,
         timestamp: new Date().toISOString()
     });
@@ -239,6 +240,7 @@ app.get("/", (req, res) => {
         message: "Dakids Addon Server", 
         status: "running",
         hasCookies: hasCookies,
+        ytDlpAvailable: !!ytDlpWrap,
         version: "1.0.0",
         channels: metaDatabase.length,
         totalVideos: totalVideos,
@@ -257,6 +259,7 @@ app.listen(PORT, "0.0.0.0", () => {
     
     const hasCookies = fs.existsSync(cookiesPath);
     console.log(`🍪 Cookies: ${hasCookies ? '✅ Found' : '❌ Not found'}`);
+    console.log(`📦 yt-dlp-wrap: ${ytDlpWrap ? '✅ Available' : '❌ Not available'}`);
     
     // Log dettagliato
     metaDatabase.forEach((channel, index) => {
