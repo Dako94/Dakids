@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// LETTURA METADATA
+// ===================== LETTURA METADATA =====================
 let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
@@ -17,7 +17,7 @@ try {
   console.error("❌ Errore nella lettura di meta.json:", err);
 }
 
-// FUNZIONE DI CONVERSIONE DURATA IN MINUTI
+// ===================== FUNZIONI DI UTILITÀ =====================
 function durationToMinutes(duration) {
   const parts = duration.split(":").map(Number);
   if (parts.length === 3) return parts[0]*60 + parts[1] + parts[2]/60;
@@ -25,33 +25,48 @@ function durationToMinutes(duration) {
   return parseFloat(duration) || 0;
 }
 
-// CONVERSIONE DATA ISO
 function formatDate(date) {
-  // date = "20250901" -> "2025-09-01"
   return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 }
 
-// HOMEPAGE
-app.get("/", (req, res) => {
-  res.send(`
-    <h1>📺 Dakids TV Addon</h1>
-    <p>Status: ✅ Online</p>
-    <p>Video disponibili: ${allVideos.length}</p>
-    <ul>
-      <li><a href="/manifest.json">Manifest</a></li>
-      <li><a href="/catalog/movie/dakids-catalog.json">Catalogo</a></li>
-      <li><a href="/health">Health</a></li>
-    </ul>
-  `);
+// ===================== CATALOGO =====================
+app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
+  const metas = allVideos.map(video => ({
+    id: video.id,
+    type: "movie",
+    name: video.title,
+    poster: video.thumbnail,
+    background: video.thumbnail,
+    description: `${video.title}\n\n👀 ${video.viewCount} visualizzazioni\n⏱️ ${video.duration}\nCanale: ${video.channelName}`,
+    runtime: durationToMinutes(video.duration),
+    released: formatDate(video.date),
+    genres: ["Animation", "Kids"],
+    imdbRating: "7.5"
+  }));
+  res.json({ metas });
 });
 
-// MANIFEST
+// ===================== STREAM =====================
+app.get("/stream/movie/:videoId.json", (req, res) => {
+  const videoId = req.params.videoId;
+  const video = allVideos.find(v => v.id === videoId);
+  if (!video) return res.status(404).json({ error: "Video not found" });
+
+  res.json({
+    streams: [{
+      title: video.title,
+      externalUrl: `https://www.youtube.com/embed/${video.youtubeId}`
+    }]
+  });
+});
+
+// ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "dakids.addon",
     version: "1.0.0",
     name: "Dakids TV",
-    description: "Cartoni animati per bambini",
+    description: "Cartoni animati per bambini, divertenti e sicuri!",
     resources: ["catalog", "stream"],
     types: ["movie"],
     catalogs: [
@@ -61,52 +76,63 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-// CATALOGO STREMIO
-app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
-  const metas = allVideos.map(video => ({
-    id: video.id,
-    type: "movie",
-    name: video.title,
-    poster: video.thumbnail,
-    background: video.thumbnail,
-    description: `
-      ${video.title}
-      👀 ${video.viewCount} visualizzazioni
-      ❤️ ${video.likes} likes
-      ⏱️ Durata: ${video.duration}
-      Canale: ${video.channelName}
-    `,
-    runtime: durationToMinutes(video.duration),
-    released: formatDate(video.date),
-    genres: ["Animation", "Kids"],
-    imdbRating: "7.5"
-  }));
-
-  res.json({ metas });
-});
-
-// STREAM
-app.get("/stream/movie/:videoId.json", (req, res) => {
-  const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.id === videoId);
-
-  if (!video) return res.status(404).json({ error: "Video not found" });
-
-  res.json({
-    streams: [{
-      title: video.title,
-      externalUrl: video.url
-    }]
-  });
-});
-
-// HEALTH CHECK
+// ===================== HEALTH CHECK =====================
 app.get("/health", (req, res) => {
   res.json({ status: "OK", videos: allVideos.length });
 });
 
-// AVVIO SERVER
+// ===================== HOMEPAGE =====================
+app.get("/", (req, res) => {
+  const protocol = req.get('x-forwarded-proto') || req.protocol;
+  const host = req.get('host');
+  const baseUrl = `${protocol}://${host}`;
+
+  const html = `
+  <!DOCTYPE html>
+  <html lang="it">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dakids TV - Addon Stremio per Bambini</title>
+    <style>
+      body { font-family: Arial, sans-serif; background: #fffae3; color: #333; text-align: center; padding: 2rem; }
+      h1 { color: #ff6f61; }
+      a { text-decoration: none; color: #0077cc; }
+      a:hover { text-decoration: underline; }
+      .video { display: inline-block; margin: 1rem; border: 2px solid #ffd700; border-radius: 12px; overflow: hidden; width: 220px; }
+      .video img { width: 100%; display: block; }
+      .video-title { font-size: 0.9rem; padding: 0.5rem; background: #fffacd; }
+    </style>
+  </head>
+  <body>
+    <h1>🎬 Benvenuti su Dakids TV!</h1>
+    <p>Cartoni animati e video divertenti per bambini di tutte le età.</p>
+    <p>Status: ✅ Online | Videos disponibili: ${allVideos.length}</p>
+    <p>Scarica il manifest Stremio: <a href="${baseUrl}/manifest.json">${baseUrl}/manifest.json</a></p>
+    <p>Health Check: <a href="${baseUrl}/health">${baseUrl}/health</a></p>
+    <hr>
+    <h2>I nostri video più recenti</h2>
+    <div>`;
+  
+  allVideos.slice(0, 10).forEach(video => {
+    html += `
+      <div class="video">
+        <img src="${video.thumbnail}" alt="${video.title}">
+        <div class="video-title">${video.title}</div>
+      </div>`;
+  });
+
+  html += `
+    </div>
+  </body>
+  </html>`;
+  
+  res.send(html);
+});
+
+// ===================== SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Dakids Addon running on port", PORT);
+  console.log(`📺 Video disponibili: ${allVideos.length}`);
 });
