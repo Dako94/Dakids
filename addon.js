@@ -3,9 +3,11 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import { YtDlpWrap } from "yt-dlp-wrap";
+import pkg from "yt-dlp-wrap";   // 👈 Importa il pacchetto CommonJS come default
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+
+const { YtDlpWrap } = pkg;       // 👈 Estrai la classe YtDlpWrap
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
