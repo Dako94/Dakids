@@ -41,16 +41,34 @@ try {
     const metaData = fs.readFileSync(path.join(__dirname, "meta.json"), "utf-8");
     allVideos = JSON.parse(metaData);
     console.log(`✅ Loaded ${allVideos.length} videos from meta.json`);
+    
+    // DEBUG: Mostra i canali unici presenti nel meta.json
+    const uniqueChannels = [...new Set(allVideos.map(v => v.channelUrl))];
+    console.log("🔍 Unique channels in meta.json:");
+    uniqueChannels.forEach((url, i) => {
+        console.log(`   ${i + 1}. ${url}`);
+    });
+    
 } catch (error) {
     console.log("❌ No meta.json found, using empty array");
     allVideos = [];
 }
 
-// Filtra video per canale usando l'ID del canale dall'URL
+// Filtra video per canale - DEBUG migliorato
 const metaDatabase = userConfig.channels.map(channel => {
-    const channelVideos = allVideos.filter(video => 
-        video.channelUrl && video.channelUrl.includes(channel.id)
-    );
+    const channelVideos = allVideos.filter(video => {
+        if (!video.channelUrl) return false;
+        
+        const hasVideo = video.channelUrl.includes(channel.id);
+        if (!hasVideo) {
+            console.log(`❌ Video ${video.id} non matcha canale ${channel.id}`);
+            console.log(`   Channel URL: ${video.channelUrl}`);
+            console.log(`   Looking for: ${channel.id}`);
+        }
+        return hasVideo;
+    });
+    
+    console.log(`📊 Canale ${channel.name}: ${channelVideos.length} video trovati`);
     return {
         ...channel,
         metas: channelVideos
@@ -60,6 +78,11 @@ const metaDatabase = userConfig.channels.map(channel => {
 console.log("📊 Channels summary:");
 metaDatabase.forEach((channel, index) => {
     console.log(`   ${index}. ${channel.name}: ${channel.metas.length} videos`);
+    
+    // Mostra i primi 3 video per debug
+    if (channel.metas.length > 0) {
+        console.log(`      Sample videos: ${channel.metas.slice(0, 3).map(v => v.id).join(', ')}`);
+    }
 });
 
 // Helper functions
@@ -112,7 +135,13 @@ app.get("/catalog/movie/channel-:index.json", (req, res) => {
     const channel = metaDatabase[index];
     const metas = processMetaDatabase(channel.metas, index);
     
-    console.log(`📦 Returning ${metas.length} videos for channel ${index}`);
+    console.log(`📦 Returning ${metas.length} videos for channel ${index} (${channel.name})`);
+    
+    // DEBUG: Log dei primi 3 ID generati
+    if (metas.length > 0) {
+        console.log(`   Sample IDs: ${metas.slice(0, 3).map(m => m.id).join(', ')}`);
+    }
+    
     res.json({ metas });
 });
 
@@ -145,6 +174,7 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
     
     if (!video) {
         console.log("❌ Video not found in channel");
+        console.log(`   Available videos: ${channel.metas.slice(0, 5).map(v => v.id).join(', ')}`);
         return res.status(404).json({ error: "Video not found" });
     }
 
@@ -159,7 +189,7 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
     });
 });
 
-// Health check
+// Health check con info dettagliate
 app.get("/health", (req, res) => {
     const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
     
@@ -167,9 +197,41 @@ app.get("/health", (req, res) => {
         status: "OK", 
         totalVideos: totalVideos,
         hasCookies: hasCookies,
-        channels: metaDatabase.length,
+        channels: metaDatabase.map(ch => ({
+            name: ch.name,
+            videoCount: ch.metas.length,
+            sampleVideos: ch.metas.slice(0, 3).map(v => v.id)
+        })),
         timestamp: new Date().toISOString(),
         platform: "Render compatible"
+    });
+});
+
+// Debug endpoint per vedere la struttura completa
+app.get("/debug", (req, res) => {
+    const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
+    
+    res.json({
+        metaInfo: {
+            totalVideos: allVideos.length,
+            uniqueChannels: [...new Set(allVideos.map(v => v.channelUrl))],
+            sampleVideos: allVideos.slice(0, 3).map(v => ({
+                id: v.id,
+                title: v.title,
+                channelUrl: v.channelUrl
+            }))
+        },
+        configuredChannels: metaDatabase.map((channel, index) => ({
+            index: index,
+            configuredId: channel.id,
+            name: channel.name,
+            foundVideos: channel.metas.length,
+            sampleVideos: channel.metas.slice(0, 3).map(v => ({
+                id: v.id,
+                title: v.title,
+                generatedId: `dakids-${index}-${safeId(v.id)}`
+            }))
+        }))
     });
 });
 
@@ -317,6 +379,7 @@ app.get("/", (req, res) => {
             <div style="text-align: center; margin: 30px 0;">
                 <a href="/manifest.json" class="btn" target="_blank">📜 Manifest Stremio</a>
                 <a href="/health" class="btn" target="_blank">❤️ Health Check</a>
+                <a href="/debug" class="btn" target="_blank">🐛 Debug Info</a>
             </div>
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin: 20px 0;">
@@ -353,4 +416,6 @@ app.listen(PORT, "0.0.0.0", () => {
     metaDatabase.forEach((channel, index) => {
         console.log(`   Channel ${index}: ${channel.name} - ${channel.metas.length} videos`);
     });
+    
+    console.log(`🔍 Debug info available at: http://localhost:${PORT}/debug`);
 });
