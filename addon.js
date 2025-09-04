@@ -11,17 +11,14 @@ app.use(express.json());
 let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
-  allVideos = JSON.parse(data).map((v, idx) => ({
-    ...v,
-    id: `tt${idx + 1}` // Tutti gli ID iniziano con tt
-  }));
+  allVideos = JSON.parse(data);
   console.log(`📦 Caricati ${allVideos.length} video`);
 } catch (err) {
   console.error("❌ Errore meta.json:", err);
   allVideos = [];
 }
 
-// ===================== ROOT =====================
+// ===================== ROOT ENDPOINT =====================
 app.get("/", (req, res) => {
   const protocol = req.get('x-forwarded-proto') || req.protocol;
   const host = req.get('host');
@@ -40,7 +37,7 @@ app.get("/", (req, res) => {
       a { text-decoration: none; color: #0077cc; }
       a:hover { text-decoration: underline; }
       .video { display: inline-block; margin: 1rem; border: 2px solid #ffd700; border-radius: 12px; overflow: hidden; width: 220px; }
-      .video img { width: 100%; display: block; }
+      .video img { width: 100%; display: block; height: 120px; object-fit: cover; }
       .video-title { font-size: 0.9rem; padding: 0.5rem; background: #fffacd; }
       .container { max-width: 1200px; margin: 0 auto; }
       .btn { display: inline-block; padding: 10px 20px; background: #4ecdc4; color: white; border-radius: 25px; margin: 10px; text-decoration: none; }
@@ -63,10 +60,11 @@ app.get("/", (req, res) => {
       <div>`;
 
   allVideos.slice(0, 12).forEach(video => {
+    const thumb = video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
     htmlContent += `
       <div class="video">
-        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg'">
-        <div class="video-title">${video.title}</div>
+        <img src="${thumb}" alt="${video.title}">
+        <div class="video-title">${video.title.substring(0, 40)}${video.title.length > 40 ? '...' : ''}</div>
       </div>`;
   });
 
@@ -84,8 +82,7 @@ app.get("/health", (req, res) => {
   res.json({ 
     status: "OK", 
     videos: allVideos.length,
-    timestamp: new Date().toISOString(),
-    server: "Dakids TV Addon"
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -94,13 +91,14 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   console.log("📦 Catalog request received");
   
   const metas = allVideos.map(video => ({
-    id: video.id,
+    id: video.id, // Deve essere "tt" + YouTube ID
     type: "movie",
     name: video.title || "Untitled",
     poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+    background: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
     description: video.title || "Video for kids",
-    runtime: 90,
-    released: "2024",
+    runtime: video.duration ? parseInt(video.duration.split(':')[0]) * 60 + parseInt(video.duration.split(':')[1]) || 0 : 0,
+    released: video.date ? video.date.substring(0, 4) : "2024",
     genres: ["Animation", "Kids"],
     imdbRating: "7.5"
   }));
@@ -109,27 +107,35 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   res.json({ metas });
 });
 
-// ===================== STREAM =====================
+// ===================== STREAM - CON YOUTUBE IFRAME API =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
   console.log(`🎬 Stream request for: ${videoId}`);
   
-  const video = allVideos.find(v => v.id === videoId);
+  // Estrai l'ID YouTube dall'ID Stremio (tt + YouTubeID)
+  const youtubeId = videoId.startsWith('tt') ? videoId.substring(2) : videoId;
+  const video = allVideos.find(v => v.youtubeId === youtubeId || v.id === videoId);
   
   if (!video) {
-    console.log("❌ Video not found");
+    console.log("❌ Video not found for:", youtubeId);
     return res.status(404).json({ error: "Video not found" });
   }
 
   console.log(`✅ Found video: ${video.title}`);
   
+  // ✅ FORMATO CORRETTO PER YOUTUBE IFRAME API
   res.json({
     streams: [{
       title: video.title,
-      ytId: video.youtubeId,
+      ytId: video.youtubeId, // YouTube Iframe API usa questo campo
       behaviorHints: {
-        notWebReady: true,
-        bingeGroup: `yt-${video.youtubeId}`
+        notWebReady: true, // ✅ Importantissimo!
+        bingeGroup: `youtube-${video.youtubeId}`,
+        // Altri hint per YouTube
+        proxyHeaders: {
+          'Referer': 'https://www.youtube.com/',
+          'Origin': 'https://www.youtube.com'
+        }
       }
     }]
   });
@@ -152,14 +158,42 @@ app.get("/manifest.json", (req, res) => {
         name: "Cartoni per Bambini"
       }
     ],
-    idPrefixes: ["tt"]
+    idPrefixes: ["tt"],
+    // Aggiungi metadati per YouTube
+    background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
+    logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
+  });
+});
+
+// ===================== DEBUG ENDPOINT =====================
+app.get("/debug", (req, res) => {
+  res.json({
+    totalVideos: allVideos.length,
+    sampleVideo: allVideos[0] || null,
+    videoIds: allVideos.slice(0, 3).map(v => ({
+      stremioId: v.id,
+      youtubeId: v.youtubeId,
+      title: v.title
+    })),
+    streamExample: allVideos[0] ? `/stream/movie/${allVideos[0].id}.json` : null
   });
 });
 
 // ===================== AVVIO SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
+  console.log("====================================");
   console.log("🚀 Dakids Addon Server Started");
+  console.log("====================================");
   console.log("📍 Port:", PORT);
   console.log("📺 Videos loaded:", allVideos.length);
+  
+  if (allVideos.length > 0) {
+    console.log("🔍 First video ID:", allVideos[0].id);
+    console.log("🔍 YouTube ID:", allVideos[0].youtubeId);
+    console.log("🔍 Stream test:", `http://localhost:${PORT}/stream/movie/${allVideos[0].id}.json`);
+  }
+  
+  console.log("🌐 Server ready");
+  console.log("====================================");
 });
