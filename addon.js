@@ -5,9 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import pkg from "yt-dlp-wrap";
 
-const { YtDlpWrap } = pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const app = express();
@@ -28,22 +26,13 @@ const userConfig = {
     ]
 };
 
-// Inizializza yt-dlp-wrap
-let ytDlpWrap;
-try {
-    ytDlpWrap = new YtDlpWrap();
-    console.log("✅ yt-dlp-wrap initialized");
-} catch (error) {
-    console.log("❌ yt-dlp-wrap initialization failed:", error.message);
-    ytDlpWrap = null;
-}
-
 // Verifica presenza cookies.txt
 const cookiesPath = path.join(__dirname, "cookies.txt");
-if (fs.existsSync(cookiesPath)) {
+const hasCookies = fs.existsSync(cookiesPath);
+if (hasCookies) {
     console.log("✅ Cookies.txt found");
 } else {
-    console.log("❌ Cookies.txt not found - some videos may not work");
+    console.log("⚠️ Cookies.txt not found - using direct YouTube links");
 }
 
 // Caricamento metadati
@@ -91,44 +80,8 @@ function processMetaDatabase(videos, channelIndex) {
     }));
 }
 
-// Funzione per ottenere stream URL con yt-dlp-wrap e cookies
-function getStreamUrl(videoId, callback) {
-    if (!ytDlpWrap) {
-        console.log("yt-dlp-wrap not available, using fallback");
-        return callback(null, `https://www.youtube.com/watch?v=${videoId}`);
-    }
-
-    const args = [
-        '-f', 'best[height<=720]',
-        '--get-url',
-        `https://www.youtube.com/watch?v=${videoId}`
-    ];
-
-    // Aggiungi cookies se esistono
-    if (fs.existsSync(cookiesPath)) {
-        args.push('--cookies', cookiesPath);
-    }
-
-    ytDlpWrap.exec(args)
-        .then((output) => {
-            const streamUrl = output.join('').trim();
-            if (streamUrl) {
-                callback(null, streamUrl);
-            } else {
-                console.error("yt-dlp-wrap returned empty output");
-                callback(null, `https://www.youtube.com/watch?v=${videoId}`);
-            }
-        })
-        .catch((error) => {
-            console.error("yt-dlp-wrap error:", error);
-            callback(null, `https://www.youtube.com/watch?v=${videoId}`);
-        });
-}
-
 // Manifest
 app.get("/manifest.json", (req, res) => {
-    const baseUrl = `https://${req.hostname}`;
-    
     res.json({
         id: "dakids-addon",
         version: "1.0.0",
@@ -163,7 +116,7 @@ app.get("/catalog/movie/channel-:index.json", (req, res) => {
     res.json({ metas });
 });
 
-// Stream con supporto cookies
+// Stream - Solo link YouTube diretto (funziona su Render)
 app.get("/stream/movie/:metaId.json", (req, res) => {
     const metaId = req.params.metaId;
     console.log(`🎬 Stream requested for: ${metaId}`);
@@ -197,46 +150,31 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
 
     console.log(`✅ Found video: ${video.title}`);
 
-    // Usa yt-dlp-wrap per ottenere l'URL dello stream con cookies
-    getStreamUrl(videoId, (error, streamUrl) => {
-        if (error) {
-            console.error("Error getting stream URL:", error);
-            // Fallback al link YouTube diretto
-            res.json({
-                streams: [{
-                    title: "YouTube",
-                    url: `https://www.youtube.com/watch?v=${videoId}`
-                }]
-            });
-        } else {
-            console.log(`📺 Stream URL obtained`);
-            res.json({
-                streams: [{
-                    title: streamUrl.includes('youtube.com') ? "YouTube" : "Direct Stream",
-                    url: streamUrl
-                }]
-            });
-        }
+    // Solo link YouTube diretto - funziona su Render
+    res.json({
+        streams: [{
+            title: "YouTube",
+            url: `https://www.youtube.com/watch?v=${videoId}`
+        }]
     });
 });
 
 // Health check
 app.get("/health", (req, res) => {
-    const hasCookies = fs.existsSync(cookiesPath);
+    const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
     
     res.json({ 
         status: "OK", 
-        totalVideos: allVideos.length,
+        totalVideos: totalVideos,
         hasCookies: hasCookies,
-        ytDlpAvailable: !!ytDlpWrap,
         channels: metaDatabase.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        platform: "Render compatible"
     });
 });
 
 // HTML in tema bimbi per la homepage
 app.get("/", (req, res) => {
-    const hasCookies = fs.existsSync(cookiesPath);
     const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
     const baseUrl = `https://${req.hostname}`;
 
@@ -386,8 +324,8 @@ app.get("/", (req, res) => {
                 <div style="text-align: center;">
                     <p>🎬 Video totali: <strong>${totalVideos}</strong></p>
                     <p>📺 Canali: <strong>${metaDatabase.length}</strong></p>
-                    <p>🍪 Cookies: <strong>${hasCookies ? '✅ Presenti' : '❌ Assenti'}</strong></p>
-                    <p>📦 yt-dlp: <strong>${ytDlpWrap ? '✅ Disponibile' : '❌ Non disponibile'}</strong></p>
+                    <p>🍪 Cookies: <strong>${hasCookies ? '✅ Presenti' : '⚠️ Usando link diretti'}</strong></p>
+                    <p>🚀 Piattaforma: <strong>✅ Render compatible</strong></p>
                 </div>
             </div>
 
@@ -409,12 +347,9 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🍪 Cookies: ${hasCookies ? '✅ Found' : '⚠️ Not found'}`);
+    console.log(`📺 Total videos: ${metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0)}`);
     
-    const hasCookies = fs.existsSync(cookiesPath);
-    console.log(`🍪 Cookies: ${hasCookies ? '✅ Found' : '❌ Not found'}`);
-    console.log(`📦 yt-dlp-wrap: ${ytDlpWrap ? '✅ Available' : '❌ Not available'}`);
-    
-    // Log dettagliato
     metaDatabase.forEach((channel, index) => {
         console.log(`   Channel ${index}: ${channel.name} - ${channel.metas.length} videos`);
     });
