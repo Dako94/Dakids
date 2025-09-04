@@ -52,10 +52,11 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
   const video = allVideos.find(v => v.id === videoId);
   if (!video) return res.status(404).json({ error: "Video not found" });
 
+  // YouTube già supportato da Stremio come externalUrl
   res.json({
     streams: [{
       title: video.title,
-      url: `https://www.youtube.com/watch?v=${video.youtubeId}`
+      externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`
     }]
   });
 });
@@ -114,7 +115,6 @@ app.get("/", (req, res) => {
     <h2>I nostri video più recenti</h2>
     <div>`;
   
-  // Aggiungi i video dinamicamente
   allVideos.slice(0, 10).forEach(video => {
     htmlContent += `
       <div class="video">
