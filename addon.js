@@ -37,7 +37,7 @@ try {
     allVideos = [];
 }
 
-// Filtra video per canale (usa l'ID canale invece del nome)
+// Filtra video per canale usando l'ID del canale dall'URL
 const metaDatabase = userConfig.channels.map(channel => {
     const channelVideos = allVideos.filter(video => 
         video.channelUrl && video.channelUrl.includes(channel.id)
@@ -58,14 +58,16 @@ function safeId(id) {
     return id ? encodeURIComponent(id.toString().trim()) : "unknown";
 }
 
-function processMetaDatabase(videos) {
-    return videos.map((video, index) => ({
-        id: `dakids-${index}-${safeId(video.id)}`,
+function processMetaDatabase(videos, channelIndex) {
+    return videos.map((video, videoIndex) => ({
+        id: `dakids-${channelIndex}-${safeId(video.id)}`,
         type: "movie",
         name: video.title || "Titolo Sconosciuto",
         poster: `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`,
-        description: video.title || "Video",
+        background: `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
+        description: `${video.title || "Video"} - ${video.viewCount || 0} visualizzazioni`,
         runtime: video.duration || "0:00",
+        released: video.date ? video.date.split('T')[0] : "2025-01-01"
     }));
 }
 
@@ -84,6 +86,8 @@ app.get("/manifest.json", (req, res) => {
             name: channel.name,
         })),
         idPrefixes: ["tt"],
+        background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
+        logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
     });
 });
 
@@ -96,30 +100,49 @@ app.get("/catalog/movie/channel-:index.json", (req, res) => {
     }
 
     const channel = metaDatabase[index];
-    const metas = processMetaDatabase(channel.metas);
+    const metas = processMetaDatabase(channel.metas, index);
     
+    console.log(`📦 Returning ${metas.length} videos for channel ${index}`);
     res.json({ metas });
 });
 
-// Stream
+// Stream - CORRETTO: ora cerca per video ID reale
 app.get("/stream/movie/:metaId.json", (req, res) => {
     const metaId = req.params.metaId;
+    console.log(`🎬 Stream requested for: ${metaId}`);
+
     const match = metaId.match(/^dakids-(\d+)-(.+)$/);
     
-    if (!match) return res.status(404).json({ error: "Invalid ID" });
+    if (!match) {
+        console.log("❌ Invalid meta ID format");
+        return res.status(404).json({ error: "Invalid ID format" });
+    }
 
-    const index = parseInt(match[1]);
+    const channelIndex = parseInt(match[1]);
     const videoId = decodeURIComponent(match[2]);
 
-    if (isNaN(index) || index < 0 || index >= metaDatabase.length) {
+    console.log(`🔍 Looking for channel ${channelIndex}, video ID: ${videoId}`);
+
+    if (isNaN(channelIndex) || channelIndex < 0 || channelIndex >= metaDatabase.length) {
+        console.log("❌ Channel not found");
         return res.status(404).json({ error: "Channel not found" });
     }
 
-    const channel = metaDatabase[index];
+    const channel = metaDatabase[channelIndex];
+    console.log(`📺 Channel: ${channel.name}, videos: ${channel.metas.length}`);
+
+    // Cerca il video per ID reale (non encoded)
     const video = channel.metas.find(v => v.id === videoId);
     
-    if (!video) return res.status(404).json({ error: "Video not found" });
+    if (!video) {
+        console.log("❌ Video not found in channel");
+        // Debug: lista tutti gli ID video nel canale
+        const videoIds = channel.metas.map(v => v.id);
+        console.log(`📋 Available video IDs: ${videoIds.join(', ')}`);
+        return res.status(404).json({ error: "Video not found" });
+    }
 
+    console.log(`✅ Found video: ${video.title}`);
     res.json({
         streams: [{
             title: "YouTube",
@@ -128,20 +151,55 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
     });
 });
 
-// Health check
+// Health check con info dettagliate
 app.get("/health", (req, res) => {
+    const channelInfo = metaDatabase.map((channel, index) => ({
+        index: index,
+        name: channel.name,
+        videoCount: channel.metas.length,
+        sampleVideos: channel.metas.slice(0, 2).map(v => v.id)
+    }));
+
     res.json({ 
         status: "OK", 
-        videos: allVideos.length,
-        channels: metaDatabase.length 
+        totalVideos: allVideos.length,
+        channels: channelInfo,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Debug endpoint per vedere la struttura dei dati
+app.get("/debug", (req, res) => {
+    res.json({
+        metaDatabase: metaDatabase.map((channel, index) => ({
+            channelIndex: index,
+            channelName: channel.name,
+            videoCount: channel.metas.length,
+            videos: channel.metas.slice(0, 3).map(v => ({
+                id: v.id,
+                title: v.title,
+                generatedId: `dakids-${index}-${safeId(v.id)}`
+            }))
+        }))
     });
 });
 
 // Root
 app.get("/", (req, res) => {
+    const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
+    
     res.json({ 
-        message: "Dakids Addon", 
-        status: "running" 
+        message: "Dakids Addon Server", 
+        status: "running",
+        version: "1.0.0",
+        channels: metaDatabase.length,
+        totalVideos: totalVideos,
+        endpoints: {
+            manifest: "/manifest.json",
+            health: "/health",
+            debug: "/debug",
+            catalog: "/catalog/movie/channel-0.json"
+        }
     });
 });
 
@@ -149,4 +207,15 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📍 Health check: http://localhost:${PORT}/health`);
+    console.log(`📜 Manifest: http://localhost:${PORT}/manifest.json`);
+    console.log(`🐛 Debug: http://localhost:${PORT}/debug`);
+    
+    // Log dettagliato
+    metaDatabase.forEach((channel, index) => {
+        console.log(`   Channel ${index}: ${channel.name} - ${channel.metas.length} videos`);
+        if (channel.metas.length > 0) {
+            console.log(`     Sample ID: dakids-${index}-${safeId(channel.metas[0].id)}`);
+        }
+    });
 });
