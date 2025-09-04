@@ -28,12 +28,12 @@ const userConfig = {
         {
             name: "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
             id: "UCwQ-5RSINDVfzfxyTtQPSww",
-            filter: "Pocoyo"
+            channelNameFilter: "Pocoyo 🇮🇹 Italiano - Canale Ufficiale"
         },
         {
             name: "Peppa Pig - Official Channel", 
             id: "UCAOtE1V7Ots4DjM8JLlrYgg",
-            filter: "Peppa"
+            channelNameFilter: "Peppa Pig - Official Channel"
         },
     ]
 };
@@ -57,7 +57,7 @@ function loadMetaDatabase() {
             // Filtra i video per canale
             userConfig.channels.forEach(channel => {
                 const channelVideos = allVideos.filter(video => 
-                    video.channelName && video.channelName.includes(channel.filter)
+                    video.channelName && video.channelName === channel.channelNameFilter
                 );
                 
                 console.log(`Found ${channelVideos.length} videos for ${channel.name}`);
@@ -65,7 +65,7 @@ function loadMetaDatabase() {
                 metaDatabase.push({
                     id: channel.id,
                     name: channel.name,
-                    filter: channel.filter,
+                    channelNameFilter: channel.channelNameFilter,
                     metas: channelVideos
                 });
             });
@@ -78,7 +78,7 @@ function loadMetaDatabase() {
                 metaDatabase.push({
                     id: channel.id,
                     name: channel.name,
-                    filter: channel.filter,
+                    channelNameFilter: channel.channelNameFilter,
                     metas: []
                 });
             });
@@ -90,7 +90,7 @@ function loadMetaDatabase() {
             metaDatabase.push({
                 id: channel.id,
                 name: channel.name,
-                filter: channel.filter,
+                channelNameFilter: channel.channelNameFilter,
                 metas: []
             });
         });
@@ -151,8 +151,12 @@ app.get("/catalog/movie/channel-:index.json", (req, res) => {
     }
 
     const channelMeta = metaDatabase[index];
-    if (!channelMeta) {
-        return res.status(404).json({ error: "Nessun meta disponibile" });
+    if (!channelMeta || !channelMeta.metas || channelMeta.metas.length === 0) {
+        return res.status(404).json({ 
+            error: "Nessun video disponibile per questo canale",
+            channel: channelMeta?.name,
+            videoCount: channelMeta?.metas?.length || 0
+        });
     }
 
     const metas = processMetaDatabase(channelMeta.metas, channelMeta.name);
@@ -162,8 +166,8 @@ app.get("/catalog/movie/channel-:index.json", (req, res) => {
 
 app.get("/catalog/movie.json", (req, res) => {
     console.log("Default catalog requested");
-    if (!metaDatabase[0]) {
-        return res.status(404).json({ error: "Nessun meta disponibile" });
+    if (!metaDatabase[0] || !metaDatabase[0].metas || metaDatabase[0].metas.length === 0) {
+        return res.status(404).json({ error: "Nessun video disponibile" });
     }
 
     const metas = processMetaDatabase(metaDatabase[0].metas, metaDatabase[0].name);
@@ -215,7 +219,11 @@ app.get("/health", (req, res) => {
         timestamp: new Date().toISOString(),
         channels: metaDatabase.length,
         totalVideos: totalVideos,
-        environment: process.env.NODE_ENV || 'development'
+        environment: process.env.NODE_ENV || 'development',
+        channelDetails: metaDatabase.map(channel => ({
+            name: channel.name,
+            videoCount: channel.metas.length
+        }))
     });
 });
 
@@ -239,7 +247,12 @@ app.get("/", (req, res) => {
             health: "/health",
             catalog: "/catalog/movie/channel-0.json",
             debug: "/debug"
-        }
+        },
+        channels: metaDatabase.map(channel => ({
+            name: channel.name,
+            videoCount: channel.metas.length,
+            filter: channel.channelNameFilter
+        }))
     });
 });
 
@@ -259,17 +272,21 @@ app.get("/debug", (req, res) => {
         metaFile: {
             name: "meta.json",
             exists: fs.existsSync(path.join(__dirname, "meta.json")),
-            totalVideos: allVideos.length
+            totalVideos: allVideos.length,
+            sampleVideos: allVideos.slice(0, 3).map(v => ({
+                id: v.id,
+                title: v.title,
+                channelName: v.channelName
+            }))
         },
         channels: metaDatabase.map((channel, index) => ({
             id: channel.id,
             name: channel.name,
-            filter: channel.filter,
+            channelNameFilter: channel.channelNameFilter,
             videoCount: channel.metas.length,
             sampleVideos: channel.metas.slice(0, 3).map(v => ({
                 id: v.id,
-                title: v.title,
-                channel: v.channelName
+                title: v.title
             }))
         }))
     });
@@ -308,12 +325,15 @@ if (fs.existsSync(metaFilePath)) {
     try {
         const metaData = JSON.parse(fs.readFileSync(metaFilePath, "utf-8"));
         console.log(`Trovati ${metaData.length} video totali`);
-        if (metaData.length > 0) {
-            console.log("Primi 3 video:");
-            metaData.slice(0, 3).forEach((video, i) => {
-                console.log(`  ${i + 1}. ${video.title} (${video.channelName})`);
-            });
-        }
+        
+        // Mostra i canali unici presenti nel file
+        const uniqueChannels = [...new Set(metaData.map(v => v.channelName))];
+        console.log("Canali trovati nel meta.json:");
+        uniqueChannels.forEach(channel => {
+            const count = metaData.filter(v => v.channelName === channel).length;
+            console.log(`  - ${channel}: ${count} video`);
+        });
+        
     } catch (error) {
         console.error("Errore nella lettura di meta.json:", error);
     }
@@ -326,9 +346,9 @@ const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`📜 Manifest: http://localhost:${PORT}/manifest.json`);
     
     // Log dei canali e video caricati
-    console.log("\n📊 Canali caricati:");
+    console.log("\n📊 Canali configurati:");
     metaDatabase.forEach((channel, index) => {
-        console.log(`  ${index}. ${channel.name}: ${channel.metas.length} video`);
+        console.log(`  ${index}. ${channel.name}: ${channel.metas.length} video (filtro: ${channel.channelNameFilter})`);
     });
     
     if (process.env.NODE_ENV === 'production') {
