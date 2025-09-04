@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { spawn } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,6 +26,14 @@ const userConfig = {
         },
     ]
 };
+
+// Verifica presenza cookies.txt
+const cookiesPath = path.join(__dirname, "cookies.txt");
+if (fs.existsSync(cookiesPath)) {
+    console.log("✅ Cookies.txt found");
+} else {
+    console.log("❌ Cookies.txt not found - some videos may not work");
+}
 
 // Caricamento metadati
 let allVideos = [];
@@ -71,6 +80,49 @@ function processMetaDatabase(videos, channelIndex) {
     }));
 }
 
+// Funzione per ottenere stream URL con yt-dlp e cookies
+function getStreamUrl(videoId, callback) {
+    const args = [
+        '-f', 'best[height<=720]',
+        '--get-url',
+        `https://www.youtube.com/watch?v=${videoId}`
+    ];
+
+    // Aggiungi cookies se esistono
+    if (fs.existsSync(cookiesPath)) {
+        args.push('--cookies', cookiesPath);
+    }
+
+    const ytDlp = spawn('yt-dlp', args);
+
+    let stdout = '';
+    let stderr = '';
+
+    ytDlp.stdout.on('data', (data) => {
+        stdout += data.toString();
+    });
+
+    ytDlp.stderr.on('data', (data) => {
+        stderr += data.toString();
+    });
+
+    ytDlp.on('close', (code) => {
+        if (code === 0 && stdout.trim()) {
+            callback(null, stdout.trim());
+        } else {
+            console.error(`yt-dlp error: ${stderr}`);
+            // Fallback al link YouTube diretto
+            callback(null, `https://www.youtube.com/watch?v=${videoId}`);
+        }
+    });
+
+    ytDlp.on('error', (err) => {
+        console.error('yt-dlp execution error:', err);
+        // Fallback al link YouTube diretto
+        callback(null, `https://www.youtube.com/watch?v=${videoId}`);
+    });
+}
+
 // Manifest
 app.get("/manifest.json", (req, res) => {
     res.json({
@@ -106,7 +158,7 @@ app.get("/catalog/movie/channel-:index.json", (req, res) => {
     res.json({ metas });
 });
 
-// Stream - CORRETTO: ora cerca per video ID reale
+// Stream con supporto cookies
 app.get("/stream/movie/:metaId.json", (req, res) => {
     const metaId = req.params.metaId;
     console.log(`🎬 Stream requested for: ${metaId}`);
@@ -131,73 +183,66 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
     const channel = metaDatabase[channelIndex];
     console.log(`📺 Channel: ${channel.name}, videos: ${channel.metas.length}`);
 
-    // Cerca il video per ID reale (non encoded)
     const video = channel.metas.find(v => v.id === videoId);
     
     if (!video) {
         console.log("❌ Video not found in channel");
-        // Debug: lista tutti gli ID video nel canale
-        const videoIds = channel.metas.map(v => v.id);
-        console.log(`📋 Available video IDs: ${videoIds.join(', ')}`);
         return res.status(404).json({ error: "Video not found" });
     }
 
     console.log(`✅ Found video: ${video.title}`);
-    res.json({
-        streams: [{
-            title: "YouTube",
-            url: `https://www.youtube.com/watch?v=${video.id}`
-        }]
+
+    // Usa yt-dlp per ottenere l'URL dello stream con cookies
+    getStreamUrl(videoId, (error, streamUrl) => {
+        if (error) {
+            console.error("Error getting stream URL:", error);
+            // Fallback al link YouTube diretto
+            res.json({
+                streams: [{
+                    title: "YouTube",
+                    url: `https://www.youtube.com/watch?v=${videoId}`
+                }]
+            });
+        } else {
+            console.log(`📺 Stream URL: ${streamUrl}`);
+            res.json({
+                streams: [{
+                    title: "Direct Stream",
+                    url: streamUrl
+                }]
+            });
+        }
     });
 });
 
-// Health check con info dettagliate
+// Health check
 app.get("/health", (req, res) => {
-    const channelInfo = metaDatabase.map((channel, index) => ({
-        index: index,
-        name: channel.name,
-        videoCount: channel.metas.length,
-        sampleVideos: channel.metas.slice(0, 2).map(v => v.id)
-    }));
-
+    const hasCookies = fs.existsSync(cookiesPath);
+    
     res.json({ 
         status: "OK", 
         totalVideos: allVideos.length,
-        channels: channelInfo,
+        hasCookies: hasCookies,
+        channels: metaDatabase.length,
         timestamp: new Date().toISOString()
-    });
-});
-
-// Debug endpoint per vedere la struttura dei dati
-app.get("/debug", (req, res) => {
-    res.json({
-        metaDatabase: metaDatabase.map((channel, index) => ({
-            channelIndex: index,
-            channelName: channel.name,
-            videoCount: channel.metas.length,
-            videos: channel.metas.slice(0, 3).map(v => ({
-                id: v.id,
-                title: v.title,
-                generatedId: `dakids-${index}-${safeId(v.id)}`
-            }))
-        }))
     });
 });
 
 // Root
 app.get("/", (req, res) => {
+    const hasCookies = fs.existsSync(cookiesPath);
     const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
     
     res.json({ 
         message: "Dakids Addon Server", 
         status: "running",
+        hasCookies: hasCookies,
         version: "1.0.0",
         channels: metaDatabase.length,
         totalVideos: totalVideos,
         endpoints: {
             manifest: "/manifest.json",
             health: "/health",
-            debug: "/debug",
             catalog: "/catalog/movie/channel-0.json"
         }
     });
@@ -209,13 +254,12 @@ app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📍 Health check: http://localhost:${PORT}/health`);
     console.log(`📜 Manifest: http://localhost:${PORT}/manifest.json`);
-    console.log(`🐛 Debug: http://localhost:${PORT}/debug`);
+    
+    const hasCookies = fs.existsSync(cookiesPath);
+    console.log(`🍪 Cookies: ${hasCookies ? '✅ Found' : '❌ Not found'}`);
     
     // Log dettagliato
     metaDatabase.forEach((channel, index) => {
         console.log(`   Channel ${index}: ${channel.name} - ${channel.metas.length} videos`);
-        if (channel.metas.length > 0) {
-            console.log(`     Sample ID: dakids-${index}-${safeId(channel.metas[0].id)}`);
-        }
     });
 });
