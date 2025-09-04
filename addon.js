@@ -9,7 +9,11 @@ app.use(express.json());
 // ✅ VIDEO COMPATIBILI CON STREMIO (formato corretto)
 const allVideos = [
   {
+<<<<<<< HEAD
     "id": "dakids-6V0TR2BMN64", // ✅ DEVE iniziare con "tt"
+=======
+    "id": "tt6V0TR2BMN64", // ✅ DEVE iniziare con "tt"
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
     "title": "🎨 Dipingi e disegna con Pocoyo!",
     "ytId": "6V0TR2BMN64", // ID YouTube originale
     "duration": "07:32",
@@ -17,7 +21,11 @@ const allVideos = [
     "date": "2024-06-03"
   },
   {
+<<<<<<< HEAD
     "id": "dakids-mqNURU6twI", // ✅ DEVE iniziare con "tt"  
+=======
+    "id": "tt-mqNURU6twI",
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
     "title": "💖 Il nuovo profumo di Elly!",
     "ytId": "-mqNURU6twI",
     "duration": "01:02:41",
@@ -25,7 +33,11 @@ const allVideos = [
     "date": "2024-07-18"
   },
   {
+<<<<<<< HEAD
     "id": "dakids-ucjkAEQWKpg", // ✅ DEVE iniziare con "tt"
+=======
+    "id": "ttucjkAEQWKpg",
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
     "title": "🚌 Corri fino al traguardo con Pocoyo!",
     "ytId": "ucjkAEQWKpg", 
     "duration": "01:11:12",
@@ -50,16 +62,28 @@ app.get("/manifest.json", (req, res) => {
         name: "Pocoyo Cartoons"
       }
     ],
+<<<<<<< HEAD
     idPrefixes: ["dakids-"] // ✅ IMPORTANTE: dice a Stremio che i nostri ID iniziano con tt
   });
 });
 
 // ✅ CATALOGO PER STREMIO  
+=======
+    idPrefixes: ["tt"]
+  });
+});
+
+// ✅ CATALOGO PER STREMIO
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
 app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   console.log("📦 Serving catalog with", allVideos.length, "videos");
   
   const metas = allVideos.map(video => ({
+<<<<<<< HEAD
     id: `dakids-${video.ytId}`, // ✅ USA l'ID che inizia con tt
+=======
+    id: video.id,
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
     type: "movie",
     name: video.title,
     poster: `https://i.ytimg.com/vi/${video.ytId}/maxresdefault.jpg`,
@@ -74,13 +98,21 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   res.json({ metas });
 });
 
+<<<<<<< HEAD
 // ✅ STREAM PER STREMIO
+=======
+// ✅ STREAM PER STREMIO (usa externalUrl -> embed YouTube)
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
   console.log("🎬 Stream request for:", videoId);
   
+<<<<<<< HEAD
   // Trova il video per ID Stremio
 const video = allVideos.find(v => `dakids-${v.ytId}` === videoId);
+=======
+  const video = allVideos.find(v => v.id === videoId);
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
   
   if (!video) {
     console.log("❌ Video not found:", videoId);
@@ -91,7 +123,11 @@ const video = allVideos.find(v => `dakids-${v.ytId}` === videoId);
   res.json({
     streams: [{
       title: video.title,
+<<<<<<< HEAD
       url: `https://www.youtube.com/watch?v=${video.ytId}`
+=======
+      externalUrl: `https://www.youtube.com/embed/${video.ytId}`
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
     }]
   });
 });
@@ -107,7 +143,10 @@ app.get("/health", (req, res) => {
 
 // ✅ HOMEPAGE con URL dinamici
 app.get("/", (req, res) => {
+<<<<<<< HEAD
   // Ottieni l'URL base dinamicamente
+=======
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
   const protocol = req.get('x-forwarded-proto') || req.protocol;
   const host = req.get('host');
   const baseUrl = `${protocol}://${host}`;
@@ -119,6 +158,7 @@ app.get("/", (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dakids TV Addon</title>
+<<<<<<< HEAD
     <style>
       body { 
         font-family: 'Arial', sans-serif; 
@@ -229,16 +269,33 @@ app.get("/", (req, res) => {
         `).join('')}
       </div>
     </div>
+=======
+  </head>
+  <body>
+    <h1>📺 Dakids TV Addon</h1>
+    <p>Status: ✅ Online</p>
+    <p>Videos: ${allVideos.length}</p>
+    <p>Manifest: <a href="${baseUrl}/manifest.json">${baseUrl}/manifest.json</a></p>
+    <p>Catalog: <a href="${baseUrl}/catalog/movie/dakids-catalog.json">${baseUrl}/catalog/movie/dakids-catalog.json</a></p>
+    <p>Health: <a href="${baseUrl}/health">${baseUrl}/health</a></p>
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
   </body>
   </html>`;
   
   res.send(html);
 });
 
+<<<<<<< HEAD
 // ✅ AVVIO SERVER (compatibile con Render)
+=======
+// ✅ AVVIO SERVER
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Dakids Addon running on port", PORT);
   console.log("📺 Videos:", allVideos.length);
+<<<<<<< HEAD
   console.log("🌐 Server ready for deployment");
+=======
+>>>>>>> babe245ee4917ce94dd8ba11e1d9ab94f05f6b03
 });
