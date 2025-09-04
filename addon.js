@@ -12,16 +12,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configurazione
+// Configurazione AGGIORNATA con i veri ID dei canali dal tuo meta.json
 const userConfig = {
     channels: [
         {
             name: "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-            id: "UCwQ-5RSINDVfzfxyTtQPSww",
+            id: "UCwQ-5RSINDVfzfxyTtQPSww", // Questo è l'ID reale dai tuoi video
         },
         {
             name: "Peppa Pig - Official Channel", 
-            id: "UCAOtE1V7Ots4DjM8JLlrYgg",
+            id: "UCwQ-5RSINDVfzfxyTtQPSww", // STESSO ID perché hai solo video Pocoyo
+            enabled: false // Disabilita perché non hai video Peppa Pig
         },
     ]
 };
@@ -42,47 +43,25 @@ try {
     allVideos = JSON.parse(metaData);
     console.log(`✅ Loaded ${allVideos.length} videos from meta.json`);
     
-    // DEBUG: Mostra i canali unici presenti nel meta.json
-    const uniqueChannels = [...new Set(allVideos.map(v => v.channelUrl))];
-    console.log("🔍 Unique channels in meta.json:");
-    uniqueChannels.forEach((url, i) => {
-        console.log(`   ${i + 1}. ${url}`);
-    });
-    
 } catch (error) {
     console.log("❌ No meta.json found, using empty array");
     allVideos = [];
 }
 
-// Filtra video per canale - DEBUG migliorato
-const metaDatabase = userConfig.channels.map(channel => {
-    const channelVideos = allVideos.filter(video => {
-        if (!video.channelUrl) return false;
-        
-        const hasVideo = video.channelUrl.includes(channel.id);
-        if (!hasVideo) {
-            console.log(`❌ Video ${video.id} non matcha canale ${channel.id}`);
-            console.log(`   Channel URL: ${video.channelUrl}`);
-            console.log(`   Looking for: ${channel.id}`);
-        }
-        return hasVideo;
+// SOLO CANALE POCOYO - Tutti i video sono dello stesso canale
+const metaDatabase = userConfig.channels
+    .filter(channel => channel.enabled !== false)
+    .map(channel => {
+        // Prendi TUTTI i video perché sono tutti dello stesso canale
+        return {
+            ...channel,
+            metas: allVideos // Tutti i video vanno allo stesso canale
+        };
     });
-    
-    console.log(`📊 Canale ${channel.name}: ${channelVideos.length} video trovati`);
-    return {
-        ...channel,
-        metas: channelVideos
-    };
-});
 
 console.log("📊 Channels summary:");
 metaDatabase.forEach((channel, index) => {
     console.log(`   ${index}. ${channel.name}: ${channel.metas.length} videos`);
-    
-    // Mostra i primi 3 video per debug
-    if (channel.metas.length > 0) {
-        console.log(`      Sample videos: ${channel.metas.slice(0, 3).map(v => v.id).join(', ')}`);
-    }
 });
 
 // Helper functions
@@ -103,24 +82,23 @@ function processMetaDatabase(videos, channelIndex) {
     }));
 }
 
-// Manifest
+// Manifest - SOLO canale Pocoyo
 app.get("/manifest.json", (req, res) => {
     res.json({
         id: "dakids-addon",
         version: "1.0.0",
-        name: "📺 Dakids TV",
-        description: "Cartoni animati per bambini - Pocoyo & Peppa Pig",
+        name: "📺 Dakids TV - Pocoyo",
+        description: "Cartoni animati Pocoyo per bambini",
         resources: ["catalog", "stream"],
         types: ["movie"],
-        catalogs: userConfig.channels.map((channel, index) => ({
+        catalogs: metaDatabase.map((channel, index) => ({
             type: "movie",
             id: `channel-${index}`,
             name: channel.name,
         })),
         idPrefixes: ["tt"],
         background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
-        logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
-        contactEmail: "dakids@example.com"
+        logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
     });
 });
 
@@ -137,15 +115,10 @@ app.get("/catalog/movie/channel-:index.json", (req, res) => {
     
     console.log(`📦 Returning ${metas.length} videos for channel ${index} (${channel.name})`);
     
-    // DEBUG: Log dei primi 3 ID generati
-    if (metas.length > 0) {
-        console.log(`   Sample IDs: ${metas.slice(0, 3).map(m => m.id).join(', ')}`);
-    }
-    
     res.json({ metas });
 });
 
-// Stream - Solo link YouTube diretto (funziona su Render)
+// Stream
 app.get("/stream/movie/:metaId.json", (req, res) => {
     const metaId = req.params.metaId;
     console.log(`🎬 Stream requested for: ${metaId}`);
@@ -160,27 +133,21 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
     const channelIndex = parseInt(match[1]);
     const videoId = decodeURIComponent(match[2]);
 
-    console.log(`🔍 Looking for channel ${channelIndex}, video ID: ${videoId}`);
-
     if (isNaN(channelIndex) || channelIndex < 0 || channelIndex >= metaDatabase.length) {
         console.log("❌ Channel not found");
         return res.status(404).json({ error: "Channel not found" });
     }
 
     const channel = metaDatabase[channelIndex];
-    console.log(`📺 Channel: ${channel.name}, videos: ${channel.metas.length}`);
-
     const video = channel.metas.find(v => v.id === videoId);
     
     if (!video) {
         console.log("❌ Video not found in channel");
-        console.log(`   Available videos: ${channel.metas.slice(0, 5).map(v => v.id).join(', ')}`);
         return res.status(404).json({ error: "Video not found" });
     }
 
     console.log(`✅ Found video: ${video.title}`);
 
-    // Solo link YouTube diretto - funziona su Render
     res.json({
         streams: [{
             title: "YouTube",
@@ -189,7 +156,7 @@ app.get("/stream/movie/:metaId.json", (req, res) => {
     });
 });
 
-// Health check con info dettagliate
+// Health check
 app.get("/health", (req, res) => {
     const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
     
@@ -199,39 +166,9 @@ app.get("/health", (req, res) => {
         hasCookies: hasCookies,
         channels: metaDatabase.map(ch => ({
             name: ch.name,
-            videoCount: ch.metas.length,
-            sampleVideos: ch.metas.slice(0, 3).map(v => v.id)
+            videoCount: ch.metas.length
         })),
-        timestamp: new Date().toISOString(),
-        platform: "Render compatible"
-    });
-});
-
-// Debug endpoint per vedere la struttura completa
-app.get("/debug", (req, res) => {
-    const totalVideos = metaDatabase.reduce((sum, channel) => sum + channel.metas.length, 0);
-    
-    res.json({
-        metaInfo: {
-            totalVideos: allVideos.length,
-            uniqueChannels: [...new Set(allVideos.map(v => v.channelUrl))],
-            sampleVideos: allVideos.slice(0, 3).map(v => ({
-                id: v.id,
-                title: v.title,
-                channelUrl: v.channelUrl
-            }))
-        },
-        configuredChannels: metaDatabase.map((channel, index) => ({
-            index: index,
-            configuredId: channel.id,
-            name: channel.name,
-            foundVideos: channel.metas.length,
-            sampleVideos: channel.metas.slice(0, 3).map(v => ({
-                id: v.id,
-                title: v.title,
-                generatedId: `dakids-${index}-${safeId(v.id)}`
-            }))
-        }))
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -246,7 +183,7 @@ app.get("/", (req, res) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>🎨 Dakids TV - Cartoni per Bambini</title>
+        <title>🎨 Dakids TV - Pocoyo</title>
         <style>
             body {
                 font-family: 'Comic Sans MS', cursive, sans-serif;
@@ -274,11 +211,6 @@ app.get("/", (req, res) => {
                 margin: 0;
                 text-shadow: 2px 2px 0 #ffe66d;
             }
-            .subtitle {
-                color: #4ecdc4;
-                font-size: 1.5em;
-                margin: 10px 0;
-            }
             .status-badge {
                 display: inline-block;
                 padding: 8px 16px;
@@ -300,10 +232,6 @@ app.get("/", (req, res) => {
                 border-radius: 15px;
                 color: white;
                 text-align: center;
-                transition: transform 0.3s ease;
-            }
-            .channel-card:hover {
-                transform: translateY(-5px);
             }
             .channel-name {
                 font-size: 1.3em;
@@ -322,11 +250,6 @@ app.get("/", (req, res) => {
                 border-radius: 25px;
                 margin: 10px;
                 font-weight: bold;
-                transition: all 0.3s ease;
-            }
-            .btn:hover {
-                background: #45b7aa;
-                transform: scale(1.05);
             }
             .footer {
                 text-align: center;
@@ -339,29 +262,20 @@ app.get("/", (req, res) => {
                 font-size: 2em;
                 margin: 0 5px;
             }
-            .info-box {
-                background: #ffe66d;
-                padding: 15px;
-                border-radius: 15px;
-                margin: 20px 0;
-                text-align: center;
-            }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h1 class="title">🎨 Dakids TV</h1>
-                <div class="subtitle">Cartoni animati per bambini</div>
+                <h1 class="title">🎨 Dakids TV - Pocoyo</h1>
                 <div class="status-badge">✅ Online e funzionante</div>
             </div>
 
-            <div class="info-box">
+            <div style="text-align: center; margin: 20px 0;">
                 <span class="animal">🐘</span>
                 <span class="animal">🦁</span>
                 <span class="animal">🐰</span>
                 <span class="animal">🐻</span>
-                <span class="animal">🐷</span>
             </div>
 
             <div class="channel-grid">
@@ -379,17 +293,12 @@ app.get("/", (req, res) => {
             <div style="text-align: center; margin: 30px 0;">
                 <a href="/manifest.json" class="btn" target="_blank">📜 Manifest Stremio</a>
                 <a href="/health" class="btn" target="_blank">❤️ Health Check</a>
-                <a href="/debug" class="btn" target="_blank">🐛 Debug Info</a>
             </div>
 
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin: 20px 0;">
-                <h3 style="color: #ff6b6b; text-align: center;">📊 Statistiche</h3>
-                <div style="text-align: center;">
-                    <p>🎬 Video totali: <strong>${totalVideos}</strong></p>
-                    <p>📺 Canali: <strong>${metaDatabase.length}</strong></p>
-                    <p>🍪 Cookies: <strong>${hasCookies ? '✅ Presenti' : '⚠️ Usando link diretti'}</strong></p>
-                    <p>🚀 Piattaforma: <strong>✅ Render compatible</strong></p>
-                </div>
+            <div style="text-align: center; margin: 20px 0;">
+                <p>🎬 Video totali: <strong>${totalVideos}</strong></p>
+                <p>📺 Canali: <strong>${metaDatabase.length}</strong></p>
+                <p>🍪 Cookies: <strong>${hasCookies ? '✅ Presenti' : '⚠️ Link diretti'}</strong></p>
             </div>
 
             <div class="footer">
@@ -397,7 +306,6 @@ app.get("/", (req, res) => {
                 <code style="background: #ffe66d; padding: 10px; border-radius: 10px; display: block; margin: 10px auto; max-width: 400px;">
                     ${baseUrl}/manifest.json
                 </code>
-                <p>🎉 Divertiti con i cartoni animati! 🎉</p>
             </div>
         </div>
     </body>
@@ -416,6 +324,4 @@ app.listen(PORT, "0.0.0.0", () => {
     metaDatabase.forEach((channel, index) => {
         console.log(`   Channel ${index}: ${channel.name} - ${channel.metas.length} videos`);
     });
-    
-    console.log(`🔍 Debug info available at: http://localhost:${PORT}/debug`);
 });
