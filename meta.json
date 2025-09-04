@@ -1,23 +1,14 @@
 {
-  "id": "dQw4w9WgXcQ",
-  "title": "Rick Astley - Never Gonna Give You Up (Video)",
-  "description": "The official video for Rick Astley's 'Never Gonna Give You Up'... (continua)",
-  "channel": {
-    "id": "UC38IQsAvIsxxpT5y5w20R5g",
-    "name": "RickAstleyVEVO",
-    "url": "https://www.youtube.com/user/RickAstleyVEVO"
-  },
-  "publishedAt": "2009-10-25T06:57:33Z",
-  "duration": "PT3M33S",
-  "viewCount": 1000000000,
-  "likeCount": 10000000,
-  "dislikeCount": 50000,
-  "commentCount": 200000,
-  "tags": ["Rick Astley", "Never Gonna Give You Up", "Rickroll", "80s Music"],
-  "thumbnails": {
-    "default": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg",
-    "medium": "https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
-    "high": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
-  },
-  "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  "metas": [
+    {
+      "id": "dakids-0-dQw4w9WgXcQ",
+      "type": "movie",
+      "name": "Rick Astley - Never Gonna Give You Up",
+      "poster": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+      "background": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      "description": "Rick Astley - Never Gonna Give You Up - 1000000000 visualizzazioni",
+      "runtime": "3:33",
+      "released": "2009-10-25"
+    }
+  ]
 }
