@@ -18,7 +18,7 @@ try {
   allVideos = [];
 }
 
-// ===================== ROOT ENDPOINT =====================
+// ===================== ROOT ENDPOINT CON INTERFACCIA =====================
 app.get("/", (req, res) => {
   const protocol = req.get('x-forwarded-proto') || req.protocol;
   const host = req.get('host');
@@ -30,35 +30,35 @@ app.get("/", (req, res) => {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dakids TV - Addon Stremio</title>
+    <title>Dakids TV - Addon Stremio per Bambini</title>
     <style>
       body { font-family: Arial, sans-serif; background: #fffae3; color: #333; text-align: center; padding: 2rem; }
       h1 { color: #ff6f61; }
-      a { text-decoration: none; color: #0077cc; }
-      a:hover { text-decoration: underline; }
+      a, button { text-decoration: none; color: white; background: #4ecdc4; border: none; border-radius: 25px; padding: 10px 20px; margin: 10px; cursor: pointer; }
+      button:hover, a:hover { opacity: 0.9; }
       .video { display: inline-block; margin: 1rem; border: 2px solid #ffd700; border-radius: 12px; overflow: hidden; width: 220px; }
       .video img { width: 100%; display: block; }
       .video-title { font-size: 0.9rem; padding: 0.5rem; background: #fffacd; }
       .container { max-width: 1200px; margin: 0 auto; }
-      .btn { display: inline-block; padding: 10px 20px; background: #4ecdc4; color: white; border-radius: 25px; margin: 10px; text-decoration: none; }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>🎬 Benvenuti su Dakids TV!</h1>
-      <p>Cartoni animati e video divertenti per bambini.</p>
+      <p>Cartoni animati e video divertenti per bambini di tutte le età.</p>
       <p>Status: ✅ Online | Videos disponibili: ${allVideos.length}</p>
       
       <div style="margin: 20px 0;">
-        <a href="${baseUrl}/manifest.json" class="btn" target="_blank">📜 Manifest Stremio</a>
-        <a href="${baseUrl}/health" class="btn" target="_blank">❤️ Health Check</a>
-        <a href="${baseUrl}/catalog/movie/dakids-catalog.json" class="btn" target="_blank">📦 Catalogo</a>
+        <button id="copyManifestBtn">📜 Copia Manifest Stremio</button>
+        <a href="${baseUrl}/health" target="_blank">❤️ Health Check</a>
+        <a href="${baseUrl}/catalog/movie/dakids-catalog.json" target="_blank">📦 Catalogo</a>
       </div>
       
       <hr>
       <h2>I nostri video più recenti</h2>
       <div>`;
 
+  // Aggiungi i video
   allVideos.slice(0, 12).forEach(video => {
     htmlContent += `
       <div class="video">
@@ -77,6 +77,15 @@ app.get("/", (req, res) => {
         <p>3. Incolla questo link: <code>${baseUrl}/manifest.json</code></p>
       </div>
     </div>
+
+    <script>
+      const copyBtn = document.getElementById('copyManifestBtn');
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText('${baseUrl}/manifest.json')
+          .then(() => alert('✅ Manifest Stremio copiato negli appunti!'))
+          .catch(err => alert('❌ Errore nel copiare: ' + err));
+      });
+    </script>
   </body>
   </html>`;
 
@@ -95,32 +104,42 @@ app.get("/health", (req, res) => {
 
 // ===================== CATALOGO =====================
 app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
+  console.log("📦 Catalog request received");
+  
   const metas = allVideos.map(video => ({
-    id: video.id,                          // Deve essere ttYouTubeID
+    id: video.id,               // ttYouTubeID
     type: "movie",
-    name: video.title,
+    name: video.title || "Untitled",
     poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-    description: video.title,
-    runtime: 90,
-    released: video.date.slice(0,4),
+    description: video.title || "Video for kids",
+    runtime: "90",
+    released: video.date || "2024",
     genres: ["Animation", "Kids"],
     imdbRating: "7.5"
   }));
-
+  
+  console.log(`📦 Sending ${metas.length} videos to Stremio`);
   res.json({ metas });
 });
 
 // ===================== STREAM =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
+  console.log(`🎬 Stream request for: ${videoId}`);
+  
   const video = allVideos.find(v => v.id === videoId);
+  
+  if (!video) {
+    console.log("❌ Video not found");
+    return res.status(404).json({ error: "Video not found" });
+  }
 
-  if (!video) return res.status(404).json({ error: "Video not found" });
-
+  console.log(`✅ Found video: ${video.title}`);
+  
   res.json({
     streams: [{
       title: video.title,
-      ytId: video.youtubeId,                 // Stremio usa ytId
+      ytId: video.youtubeId,
       behaviorHints: {
         notWebReady: true,
         bingeGroup: `yt-${video.youtubeId}`
@@ -131,6 +150,7 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
 
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
+  console.log("📜 Manifest request received");
   res.json({
     id: "dakids.addon",
     version: "1.0.0",
@@ -148,6 +168,10 @@ app.get("/manifest.json", (req, res) => {
 // ===================== AVVIO SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 Dakids Addon Server Started on port", PORT);
+  console.log("====================================");
+  console.log("🚀 Dakids Addon Server Started");
+  console.log("📍 Port:", PORT);
   console.log("📺 Videos loaded:", allVideos.length);
+  console.log("🌐 Server ready for Render deployment");
+  console.log("====================================");
 });
