@@ -1,38 +1,21 @@
 #!/usr/bin/env node
 import express from "express";
 import cors from "cors";
+import fs from "fs";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ VIDEO COMPATIBILI CON STREMIO
-const allVideos = [
-  {
-    "id": "dakids-6V0TR2BMN64",
-    "title": "🎨 Dipingi e disegna con Pocoyo!",
-    "ytId": "6V0TR2BMN64",
-    "duration": "07:32",
-    "viewCount": 24476,
-    "date": "2024-06-03"
-  },
-  {
-    "id": "dakids-mqNURU6twI",
-    "title": "💖 Il nuovo profumo di Elly!",
-    "ytId": "-mqNURU6twI",
-    "duration": "01:02:41",
-    "viewCount": 11279,
-    "date": "2024-07-18"
-  },
-  {
-    "id": "dakids-ucjkAEQWKpg",
-    "title": "🚌 Corri fino al traguardo con Pocoyo!",
-    "ytId": "ucjkAEQWKpg",
-    "duration": "01:11:12",
-    "viewCount": 16882,
-    "date": "2024-06-14"
-  }
-];
+// ✅ LETTURA METADATA DA FILE
+let allVideos = [];
+try {
+  const data = fs.readFileSync("./meta.json", "utf-8");
+  allVideos = JSON.parse(data);
+  console.log(`📦 Caricati ${allVideos.length} video da meta.json`);
+} catch (err) {
+  console.error("❌ Errore nella lettura di meta.json:", err);
+}
 
 // ✅ MANIFEST PER STREMIO
 app.get("/manifest.json", (req, res) => {
@@ -47,7 +30,7 @@ app.get("/manifest.json", (req, res) => {
       {
         type: "movie",
         id: "dakids-catalog",
-        name: "Pocoyo Cartoons"
+        name: "Cartoni e Video per Bambini"
       }
     ],
     idPrefixes: ["dakids-"]
@@ -60,15 +43,15 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
     id: video.id,
     type: "movie",
     name: video.title,
-    poster: `https://i.ytimg.com/vi/${video.ytId}/maxresdefault.jpg`,
-    background: `https://i.ytimg.com/vi/${video.ytId}/hqdefault.jpg`,
-    description: `${video.title}\n\n👀 ${video.viewCount} visualizzazioni\n⏱️ ${video.duration}`,
+    poster: video.thumbnail,
+    background: video.thumbnail,
+    description: `${video.title}\n\n👀 ${video.viewCount} visualizzazioni\n⏱️ ${video.duration}\nCanale: ${video.channelName}`,
     runtime: video.duration,
     released: video.date,
     genres: ["Animation", "Kids"],
     imdbRating: "7.5"
   }));
-  
+
   res.json({ metas });
 });
 
@@ -76,13 +59,13 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
   const video = allVideos.find(v => v.id === videoId);
-  
+
   if (!video) return res.status(404).json({ error: "Video not found" });
-  
+
   res.json({
     streams: [{
       title: video.title,
-      externalUrl: `https://www.youtube.com/embed/${video.ytId}`
+      externalUrl: video.url
     }]
   });
 });
@@ -127,5 +110,5 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("🚀 Dakids Addon running on port", PORT);
-  console.log("📺 Videos:", allVideos.length);
+  console.log("📺 Videos disponibili:", allVideos.length);
 });
