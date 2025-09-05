@@ -2,10 +2,13 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
+import YTDlpWrap from "yt-dlp-wrap";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const ytDlpWrap = new YTDlpWrap(); // usa yt-dlp installato nel sistema
 
 // ===================== LETTURA META.JSON =====================
 let allVideos = [];
@@ -30,84 +33,27 @@ function formatDate(date) {
   return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 }
 
-// ===================== HOMEPAGE =====================
-app.get("/", (req, res) => {
-  const protocol = req.get('x-forwarded-proto') || req.protocol;
-  const host = req.get('host');
-  const baseUrl = `${protocol}://${host}`;
-
-  let htmlContent = `
-  <!DOCTYPE html>
-  <html lang="it">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dakids TV - Addon Stremio</title>
-    <style>
-      body { font-family: Arial, sans-serif; background: #fffae3; color: #333; text-align: center; padding: 2rem; }
-      h1 { color: #ff6f61; }
-      a, button { text-decoration: none; color: white; background: #4ecdc4; padding: 10px 20px; border-radius: 25px; margin: 5px; cursor: pointer; display: inline-block; }
-      a:hover, button:hover { background: #45b3a3; }
-      .video { display: inline-block; margin: 1rem; border: 2px solid #ffd700; border-radius: 12px; overflow: hidden; width: 220px; }
-      .video img { width: 100%; display: block; }
-      .video-title { font-size: 0.9rem; padding: 0.5rem; background: #fffacd; }
-      .container { max-width: 1200px; margin: 0 auto; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>🎬 Benvenuti su Dakids TV!</h1>
-      <p>Cartoni animati e video divertenti per bambini.</p>
-      <p>Status: ✅ Online | Videos disponibili: ${allVideos.length}</p>
-      
-      <div>
-        <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
-        <a href="${baseUrl}/health" target="_blank">❤️ Health Check</a>
-        <a href="${baseUrl}/catalog/movie/dakids.json" target="_blank">📦 Catalogo</a>
-      </div>
-      
-      <hr>
-      <h2>I nostri video più recenti</h2>
-      <div>`;
-  
-  allVideos.slice(0, 12).forEach(video => {
-    htmlContent += `
-      <div class="video">
-        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg'">
-        <div class="video-title">${video.title}</div>
-      </div>`;
-  });
-
-  htmlContent += `
-      </div>
-    </div>
-
-    <script>
-      function copyManifest() {
-        navigator.clipboard.writeText("${baseUrl}/manifest.json")
-          .then(() => alert("✅ Manifest copiato negli appunti!"))
-          .catch(() => alert("❌ Impossibile copiare manifest"));
-      }
-    </script>
-  </body>
-  </html>
-  `;
-
-  res.send(htmlContent);
-});
-
-// ===================== HEALTH CHECK =====================
-app.get("/health", (req, res) => {
-  res.json({ status: "OK", videos: allVideos.length, server: "Dakids TV Addon" });
-});
+async function getDirectUrl(youtubeId) {
+  try {
+    const output = await ytDlpWrap.execPromise([
+      `https://www.youtube.com/watch?v=${youtubeId}`,
+      "-f", "best[ext=mp4]",
+      "-g"
+    ]);
+    return output.trim();
+  } catch (err) {
+    console.error("❌ Errore yt-dlp:", err);
+    return null;
+  }
+}
 
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "com.dakids.Stremio",
-    version: "2.0.0",
+    version: "3.0.0",
     name: "Dakids",
-    description: "Video per bambini - Addon pronto all'uso con metadata completi",
+    description: "Video per bambini - riproduzione diretta da YouTube",
     logo: "https://i.imgur.com/K1264cT.png",
     background: "https://i.imgur.com/gO6vKzB.png",
     resources: ["catalog", "stream"],
@@ -129,7 +75,7 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
     const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
     return {
-      id: video.id, // <-- ora uso SEMPRE id dal meta.json
+      id: video.id,
       type: "movie",
       name: video.title,
       poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
@@ -145,20 +91,32 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
 });
 
 // ===================== STREAM =====================
-app.get("/stream/movie/:videoId.json", (req, res) => {
+app.get("/stream/movie/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.id === videoId); // <-- cerco per id
+  const video = allVideos.find(v => v.id === videoId);
 
   if (!video) {
     console.error(`❌ Video non trovato con ID: ${videoId}`);
     return res.status(404).json({ streams: [] });
   }
 
+  const directUrl = await getDirectUrl(video.youtubeId);
+
+  if (!directUrl) {
+    return res.json({
+      streams: [{
+        title: `${video.title} (Apri su YouTube)`,
+        externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
+        behaviorHints: { notWebReady: true }
+      }]
+    });
+  }
+
   res.json({
     streams: [{
       title: video.title,
-      externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
-      behaviorHints: { notWebReady: true, bingeGroup: video.youtubeId }
+      url: directUrl,
+      behaviorHints: { notWebReady: false, bingeGroup: video.youtubeId }
     }]
   });
 });
