@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// — Trust proxy dietro Render e redirect HTTP→HTTPS —
+// — Redirect HTTP → HTTPS dietro Render —
 app.enable("trust proxy");
 app.use((req, res, next) => {
   if (req.get("x-forwarded-proto") === "http") {
@@ -19,17 +19,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// — Carica episodi da meta.json —
+// — Carica gli episodi da meta.json —
 let episodes = [];
 try {
-  const raw = fs.readFileSync(path.resolve("./meta.json"), "utf-8");
-  episodes = JSON.parse(raw);
+  episodes = JSON.parse(fs.readFileSync(path.resolve("./meta.json"), "utf-8"));
   console.log(`✅ Caricati ${episodes.length} episodi da meta.json`);
 } catch (err) {
   console.error("❌ Errore leggendo meta.json:", err.message);
 }
 
-// — Pagina di installazione su “/” —
+// — Installation page su “/” —
 app.get("/", (req, res) => {
   const baseUrl     = `${req.protocol}://${req.get("host")}`;
   const manifestUrl = `${baseUrl}/manifest.json`;
@@ -42,26 +41,22 @@ app.get("/", (req, res) => {
 
   res.send(`
     <!DOCTYPE html>
-    <html lang="it">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Installa Dakids Addon</title>
-      <style>
-        body { font-family:sans-serif; background:#f0f8ff; color:#333; text-align:center; padding:2rem; }
-        h1 { margin-bottom:0.5rem; }
-        .grid { display:flex; flex-wrap:wrap; justify-content:center; gap:1rem; margin:2rem 0; }
-        .card { width:150px; border:2px solid #ddd; border-radius:8px; overflow:hidden;
-                background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
-        .card img { width:100%; display:block; }
-        .card .title { padding:0.5rem; font-size:0.9rem; }
-        button { background:#4ecdc4; color:#fff; border:none; padding:0.8rem 1.5rem;
-                 font-size:1rem; border-radius:25px; cursor:pointer; transition:background 0.2s; }
-        button:hover { background:#3bb3a3; }
-        #manifest-url { margin-top:1rem; font-family:monospace; color:#555; word-break:break-all; }
-      </style>
-    </head>
-    <body>
+    <html lang="it"><head><meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Installa Dakids Addon</title>
+    <style>
+      body { font-family:sans-serif; background:#f0f8ff; text-align:center; padding:2rem; }
+      .grid { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; margin:2rem 0; }
+      .card { width:150px; border:2px solid #ddd; border-radius:8px; overflow:hidden;
+              background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+      .card img { width:100%; display:block; }
+      .title { padding:0.5rem; font-size:0.9rem; }
+      button { background:#4ecdc4; color:#fff; border:none; padding:0.8rem 1.5rem;
+               font-size:1rem; border-radius:25px; cursor:pointer; transition:background 0.2s; }
+      button:hover { background:#3bb3a3; }
+      #manifest-url { margin-top:1rem; font-family:monospace; color:#555; word-break:break-all; }
+    </style>
+    </head><body>
       <h1>🎉 Dakids Addon</h1>
       <p>Clicca sui personaggi o copia il manifest:</p>
       <div class="grid">${cardsHtml}</div>
@@ -73,21 +68,15 @@ app.get("/", (req, res) => {
         const url = "${manifestUrl}";
         btn.addEventListener("click", () => {
           navigator.clipboard.writeText(url)
-            .then(() => {
-              out.textContent = "Manifest copiato: " + url;
-              btn.textContent = "✅ Copiato!";
-            })
-            .catch(() => {
-              out.textContent = "Errore nella copia del manifest.";
-            });
+            .then(() => { btn.textContent="✅ Copiato!"; out.textContent="Manifest: "+url; })
+            .catch(() => { out.textContent="Errore copia manifest"; });
         });
       </script>
-    </body>
-    </html>
+    </body></html>
   `);
 });
 
-// — Manifest.json (route) —
+// — Manifest route —
 app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
@@ -103,7 +92,7 @@ app.get("/manifest.json", (_req, res) => {
   });
 });
 
-// — Catalog/channel/pocoyo.json —
+// — Catalog route —
 app.get("/catalog/channel/pocoyo.json", (_req, res) => {
   res.json({
     metas: [
@@ -119,7 +108,7 @@ app.get("/catalog/channel/pocoyo.json", (_req, res) => {
   });
 });
 
-// — Meta/channel/dk-pocoyo.json —
+// — Meta route —
 app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   const ep = episodes[0] || {};
   res.json({
@@ -135,41 +124,24 @@ app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   });
 });
 
-// — Stream/channel/dk-pocoyo.json — url + iframe
-app.get("/stream/channel/dk-pocoyo.json", async (_req, res) => {
-  const streams = await Promise.all(
-    episodes.map(async ep => {
-      const watchUrl = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
-      let direct;
-      try {
-        const info = await ytdl.getInfo(watchUrl);
-        const hls  = ytdl.chooseFormat(info.formats, f => f.mimeType?.includes("mpegurl"));
-        const mp4  = ytdl.chooseFormat(info.formats, f =>
-          f.container === "mp4" && f.hasVideo && f.hasAudio
-        );
-        direct = hls?.url || mp4?.url || watchUrl;
-      } catch {
-        direct = watchUrl;
-      }
+// — Stream route: restituamo **solo iframe** per garantire playback in-app su Web e App —
+app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
+  const streams = episodes.map(ep => ({
+    title: ep.title,
+    iframe: `
+      <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
+        <iframe
+          width="100%" height="100%"
+          src="https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen>
+        </iframe>
+      </div>`.trim(),
+    behaviorHints: { notWebReady: false }
+  }));
 
-      const embed = `
-        <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
-          <iframe width="100%" height="100%"
-            src="https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen>
-          </iframe>
-        </div>`.trim();
-
-      return {
-        title: ep.title,
-        url: direct,
-        iframe: embed,
-        behaviorHints: { notWebReady: false }
-      };
-    })
-  );
+  console.log(`🔍 /stream restituisce ${streams.length} iframe`);
   res.json({ streams });
 });
 
