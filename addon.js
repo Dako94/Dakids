@@ -69,6 +69,57 @@ async function getDirectUrl(youtubeId) {
   }
 }
 
+// ===================== HOME PAGE =====================
+app.get("/", (req, res) => {
+  const protocol = req.get('x-forwarded-proto') || req.protocol;
+  const host = req.get('host');
+  const baseUrl = `${protocol}://${host}`;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Dakids TV 🎈</title>
+      <style>
+        body { font-family: 'Comic Sans MS', cursive, sans-serif; background: linear-gradient(to bottom, #fffae3, #ffe4e1); color: #333; text-align: center; padding: 2rem; }
+        h1 { color: #ff6f61; font-size: 2.5rem; }
+        p { font-size: 1.2rem; }
+        button { background: #4ecdc4; color: white; border: none; padding: 15px 25px; font-size: 1.2rem; border-radius: 30px; cursor: pointer; margin-top: 1rem; box-shadow: 0 4px #3bb3a3; }
+        button:hover { background: #45b3a3; }
+        .video-preview { display: inline-block; margin: 1rem; border: 3px solid #ffd700; border-radius: 15px; overflow: hidden; width: 200px; background: white; }
+        .video-preview img { width: 100%; display: block; }
+        .video-title { padding: 0.5rem; background: #fffacd; font-size: 1rem; }
+      </style>
+    </head>
+    <body>
+      <h1>🎉 Benvenuto su Dakids TV! 🎨</h1>
+      <p>Cartoni e video divertenti per bambini 👶📺</p>
+      <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
+      <p style="font-size:0.9rem; color:#555;">Poi incollalo in Stremio per aggiungere l'addon</p>
+      <hr>
+      <h2>📺 Ultimi Video</h2>
+      <div>
+        ${allVideos.slice(0, 6).map(video => `
+          <div class="video-preview">
+            <img src="${video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`}" alt="${video.name || 'Video'}">
+            <div class="video-title">${video.name || 'Senza titolo'}</div>
+          </div>
+        `).join('')}
+      </div>
+      <script>
+        function copyManifest() {
+          navigator.clipboard.writeText("${baseUrl}/manifest.json")
+            .then(() => alert("✅ Manifest copiato negli appunti!"))
+            .catch(() => alert("❌ Impossibile copiare il manifest"));
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
   res.json({
@@ -95,19 +146,19 @@ app.get("/manifest.json", (req, res) => {
 // ===================== CATALOG =====================
 app.get("/catalog/channel/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
-    const runtimeInMinutes = durationToMinutes(video.duration);
-    const releasedDate = formatDate(video.date);
+    const runtimeInMinutes = durationToMinutes(video.runtime);
+    const releasedDate = formatDate(video.released);
 
     return {
-      id: video.id.startsWith("dk") ? video.id : `dk${video.id}`,
+      id: video.id,
       type: "channel",
-      name: video.title || "Video senza titolo",
-      poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-      description: video.title || "Nessuna descrizione",
+      name: video.name || "Video senza titolo",
+      poster: video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+      description: video.description || "Nessuna descrizione",
       released: releasedDate,
       runtime: `${Math.floor(runtimeInMinutes)} min`,
-      genres: ["Animation", "Kids"],
-      behaviorHints: { bingeGroup: video.youtubeId }
+      genres: video.genres || ["Animation", "Kids"],
+      behaviorHints: video.behaviorHints || {}
     };
   });
 
@@ -117,9 +168,7 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/channel/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  const video = allVideos.find(v =>
-    v.id === videoId || `dk${v.id}` === videoId || videoId === `dk${v.id}`
-  );
+  const video = allVideos.find(v => v.id === videoId);
 
   if (!video || !video.youtubeId) {
     return res.status(404).json({ streams: [] });
@@ -130,7 +179,7 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
   if (!directUrl) {
     return res.json({
       streams: [{
-        title: `${video.title} (Apri su YouTube)`,
+        title: `${video.name || "Video"} (Apri su YouTube)`,
         externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
         behaviorHints: { notWebReady: true }
       }]
@@ -139,7 +188,7 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
 
   res.json({
     streams: [{
-      title: video.title,
+      title: video.name || "Video",
       url: directUrl,
       behaviorHints: {
         notWebReady: false,
