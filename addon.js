@@ -193,7 +193,7 @@ app.get("/debug", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("====================================");
-  console.log("🚀 Dakids COMPLETE FIXED Addon Started");
+  console.log("🚀 Dakids IFRAME FIXED Addon Started - v3.1.0");
   console.log("====================================");
   console.log("📍 Port:", PORT);
   console.log("📺 Videos loaded:", allVideos.length);
