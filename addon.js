@@ -7,21 +7,26 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===================== LETTURA METADATA =====================
+// ===================== LETTURA META.JSON =====================
 let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
   allVideos = JSON.parse(data);
-  console.log(`📦 Loaded ${allVideos.length} videos successfully`);
+  console.log(`📦 Caricati ${allVideos.length} video`);
 } catch (err) {
-  console.error("❌ Error loading meta.json:", err);
+  console.error("❌ Errore meta.json:", err);
   allVideos = [];
 }
 
-// ===================== HOME PAGE =====================
+// ===================== FUNZIONI =====================
+function formatDate(date) {
+  return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
+}
+
+// ===================== HOMEPAGE =====================
 app.get("/", (req, res) => {
-  const protocol = req.get("x-forwarded-proto") || req.protocol;
-  const host = req.get("host");
+  const protocol = req.get('x-forwarded-proto') || req.protocol;
+  const host = req.get('host');
   const baseUrl = `${protocol}://${host}`;
 
   res.send(`
@@ -46,8 +51,8 @@ app.get("/", (req, res) => {
       
       <div class="status">
         <strong>✅ Status:</strong> Online<br>
-        <strong>📺 Videos:</strong> ${allVideos.length} loaded<br>
-        <strong>🔧 Version:</strong> Dakids v1.0
+        <strong>📺 Videos:</strong> ${allVideos.length} caricati<br>
+        <strong>🔧 Version:</strong> 4.1 con Meta Fix
       </div>
 
       <div class="links">
@@ -61,26 +66,24 @@ app.get("/", (req, res) => {
   `);
 });
 
-// ===================== HEALTH CHECK =====================
+// ===================== HEALTH =====================
 app.get("/health", (req, res) => {
-  res.json({
-    status: "healthy",
-    version: "1.0.0",
+  res.json({ 
+    status: "healthy", 
+    version: "4.1.0",
     videosLoaded: allVideos.length,
     timestamp: new Date().toISOString(),
-    server: "Express + Node.js"
+    server: "Dakids TV Addon"
   });
 });
 
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
-  console.log("📋 Manifest requested");
-
-  const manifest = {
+  res.json({
     id: "org.dakids.addon",
-    version: "1.0.0",
+    version: "4.1.0",
     name: "Dakids TV",
-    description: "YouTube cartoons for kids - iframe embed compatible",
+    description: "YouTube cartoons for kids - iframe embed",
     logo: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg",
     background: "https://i.ytimg.com/vi/jNQXAC9IVRw/maxresdefault.jpg",
     resources: ["catalog", "meta", "stream"],
@@ -91,99 +94,101 @@ app.get("/manifest.json", (req, res) => {
         type: "movie",
         id: "dakids",
         name: "🎬 Dakids Cartoons",
-        extra: [{ name: "skip", isRequired: false }]
+        extra: [
+          { name: "genre", options: ["Animation", "Kids"], isRequired: false }
+        ]
       }
     ]
-  };
-
-  res.json(manifest);
+  });
 });
 
 // ===================== CATALOG =====================
 app.get("/catalog/movie/dakids.json", (req, res) => {
-  console.log("📦 Catalog requested");
-
   const metas = allVideos.map((video, index) => {
+    const simpleId = `tt${index + 1}`;
     return {
-      id: `tt${index + 1}`,
+      id: simpleId,
       type: "movie",
-      name: video.title || `Video ${index + 1}`,
+      name: video.title,
       poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
       background: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/maxresdefault.jpg`,
-      description: video.title || "Kids cartoon video",
-      releaseInfo: video.date || "2024",
+      description: video.title,
+      releaseInfo: video.date ? formatDate(video.date) : "2024",
       runtime: video.duration || "6 min",
-      genres: ["Animation", "Kids", "Family"],
-      imdbRating: 8.0,
-      behaviorHints: {
-        bingeGroup: `tt${video.youtubeId}`
-      }
+      genres: ["Animation", "Kids"],
+      imdbRating: 7.5,
+      behaviorHints: { bingeGroup: `tt${video.youtubeId}` }
     };
   });
-
-  console.log(`📦 Sending ${metas.length} video metas`);
   res.json({ metas });
 });
 
-// ===================== STREAMS =====================
-app.get("/stream/movie/:videoId.json", (req, res) => {
-  const videoId = req.params.videoId;
-  console.log(`\n🎬 ===== STREAM REQUEST =====`);
-  console.log(`📍 Video ID: ${videoId}`);
+// ===================== META =====================
+app.get("/meta/:type/:id.json", (req, res) => {
+  const { id } = req.params;
 
-  if (videoId.startsWith("tt")) {
-    const videoIndex = parseInt(videoId.substring(2)) - 1;
-    const video = allVideos[videoIndex];
-
-    if (!video) {
-      console.log(`❌ Video not found at index ${videoIndex}`);
-      return res.status(404).json({ streams: [], error: "Video not found" });
-    }
-
-    console.log(`✅ Found video: ${video.title}`);
-    console.log(`🔗 YouTube ID: ${video.youtubeId}`);
-
-    const stream = {
-      streams: [
-        {
-          title: `▶️ ${video.title}`,
-          url: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1&origin=https://web.stremio.com`,
-          behaviorHints: {
-            notWebReady: false,
-            bingeGroup: `tt${video.youtubeId}`,
-            countryWhitelist: ["IT", "US", "GB", "DE", "FR"]
-          }
-        }
-      ]
-    };
-
-    console.log(`📤 Sending stream for: ${video.title}`);
-    return res.json(stream);
+  if (!id.startsWith("tt")) {
+    return res.status(404).json({ meta: {} });
   }
 
-  console.log(`❌ Unknown video ID format: ${videoId}`);
-  res.status(404).json({ streams: [], error: `Unknown video ID: ${videoId}` });
+  const videoIndex = parseInt(id.substring(2)) - 1;
+  const video = allVideos[videoIndex];
+
+  if (!video) {
+    return res.status(404).json({ meta: {} });
+  }
+
+  res.json({
+    meta: {
+      id,
+      type: "movie",
+      name: video.title,
+      poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+      background: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/maxresdefault.jpg`,
+      description: video.title,
+      releaseInfo: video.date ? formatDate(video.date) : "2024",
+      runtime: video.duration || "6 min",
+      genres: ["Animation", "Kids"],
+      imdbRating: "7.5",
+      behaviorHints: {
+        bingeGroup: `tt${video.youtubeId}`
+      }
+    }
+  });
 });
 
-// ===================== SERVER START =====================
-const PORT = process.env.PORT || 3000;
+// ===================== STREAM =====================
+app.get("/stream/movie/:videoId.json", (req, res) => {
+  const videoId = req.params.videoId;
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log("\n" + "=".repeat(50));
-  console.log("🚀 DAKIDS ADDON SERVER STARTED");
-  console.log("=".repeat(50));
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`📺 Videos loaded: ${allVideos.length}`);
-  console.log(`🔧 Version: 1.0.0 (Dakids)`);
-  console.log(`🌐 Status: Ready for Stremio`);
-  console.log("=".repeat(50));
-
-  if (allVideos.length > 0) {
-    console.log("\n📋 Quick Tests:");
-    console.log(`   Health: http://localhost:${PORT}/health`);
-    console.log(`   Manifest: http://localhost:${PORT}/manifest.json`);
-    console.log(`   Real Stream: http://localhost:${PORT}/stream/movie/tt1.json`);
+  if (!videoId.startsWith("tt")) {
+    return res.json({ streams: [] });
   }
 
-  console.log("\n✅ Ready for Stremio!");
+  const videoIndex = parseInt(videoId.substring(2)) - 1;
+  const video = allVideos[videoIndex];
+
+  if (!video) {
+    return res.json({ streams: [] });
+  }
+
+  res.json({
+    streams: [{
+      title: `▶️ ${video.title}`,
+      url: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1&origin=https://web.stremio.com`,
+      behaviorHints: {
+        notWebReady: false,
+        bingeGroup: `tt${video.youtubeId}`,
+        countryWhitelist: ["IT", "US", "GB", "DE", "FR"]
+      }
+    }]
+  });
+});
+
+// ===================== SERVER =====================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("🚀 Dakids Addon avviato");
+  console.log(`📍 Porta: ${PORT}`);
+  console.log(`📺 Video caricati: ${allVideos.length}`);
 });
