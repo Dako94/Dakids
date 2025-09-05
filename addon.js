@@ -7,14 +7,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// — Assicurati di avere un file meta.json accanto a package.json,
-//    contenente un array di episodi con { youtubeId, title, poster } —
+// Carica la lista di episodi da meta.json (assicurati che meta.json sia in root)
 let episodes = [];
 try {
-  episodes = JSON.parse(fs.readFileSync("./meta.json", "utf-8"));
+  const raw = fs.readFileSync("./meta.json", "utf-8");
+  episodes = JSON.parse(raw);
   console.log(`✅ Caricati ${episodes.length} episodi da meta.json`);
 } catch (err) {
-  console.error("❌ Impossibile leggere meta.json:", err.message);
+  console.error("❌ Errore leggendo meta.json:", err.message);
 }
 
 // 1) Manifest
@@ -28,17 +28,12 @@ app.get("/manifest.json", (req, res) => {
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
     catalogs: [
-      {
-        type: "channel",
-        id: "pocoyo",
-        name: "Pocoyo 🇮🇹",
-        extra: []
-      }
+      { type: "channel", id: "pocoyo", name: "Pocoyo 🇮🇹", extra: [] }
     ]
   });
 });
 
-// 2) Catalog — un solo canale
+// 2) Catalog (un solo canale)
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
     metas: [
@@ -69,23 +64,26 @@ app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   });
 });
 
-// 4) Stream — restituisce un iframe YouTube per ogni episodio
+// 4) Stream: un iframe YouTube per ogni episodio
 app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
-  const streams = episodes.map(ep => ({
-    title: ep.title,
-    iframe: `
-      <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
-        <iframe
-          width="100%"
-          height="100%"
-          src="https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen>
-        </iframe>
-      </div>`.trim(),
-    behaviorHints: { notWebReady: false }
-  }));
+  const streams = episodes.map(ep => {
+    const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
+    return {
+      title: ep.title,
+      iframe: `
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
+          <iframe
+            width="100%"
+            height="100%"
+            src="${embedUrl}"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+        </div>`.trim(),
+      behaviorHints: { notWebReady: false }
+    };
+  });
 
   console.log(`🔍 /stream restituisce ${streams.length} stream`);
   res.json({ streams });
