@@ -181,7 +181,7 @@ app.get("/manifest.json", (req, res) => {
 // ===================== DEBUG ENDPOINT =====================
 app.get("/debug", (req, res) => {
   res.json({
-    version: "COMPLETE_FIXED_3_FORMATS",
+    version: "COMPLETE_FIXED_4_FORMATS",
     totalVideos: allVideos.length,
     sampleVideo: allVideos[0] || null,
     testStreamUrl: "/stream/movie/test123.json",
@@ -206,7 +206,7 @@ app.get("/stream/movie/test456.json", (req, res) => {
 });
 
 // ===================== NUOVO STREAM FORMAT =====================
-app.get("/stream/movie/new:videoId.json", (req, res) => {
+app.get("/stream/movie/new/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
   console.log(`🎬 NEW FORMAT Stream request for: ${videoId}`);
   
