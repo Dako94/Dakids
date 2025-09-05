@@ -8,7 +8,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// — Abilita trust proxy e redirect HTTP→HTTPS dietro Render —
+// — Redirect HTTP → HTTPS (dietro Render) —
 app.enable("trust proxy");
 app.use((req, res, next) => {
   if (req.get("x-forwarded-proto") === "http") {
@@ -18,7 +18,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// — Carica gli episodi da meta.json —
+// — Carica lista episodi da meta.json —
 let episodes = [];
 try {
   const raw = fs.readFileSync(path.resolve("./meta.json"), "utf-8");
@@ -26,14 +26,13 @@ try {
   console.log(`✅ Caricati ${episodes.length} episodi da meta.json`);
 } catch (err) {
   console.error("❌ Errore leggendo meta.json:", err.message);
-  episodes = [];
 }
 
-// — Pagina di installazione alla root —  
+// — Pagina di installazione su “/” —
 app.get("/", (req, res) => {
-  const base       = `${req.protocol}://${req.get("host")}`;
-  const manifest   = `${base}/manifest.json`;
-  const cardsHtml  = episodes.map(ep => `
+  const base     = `${req.protocol}://${req.get("host")}`;
+  const manifest = `${base}/manifest.json`;
+  const cardsHtml = episodes.map(ep => `
     <div class="card">
       <img src="${ep.poster}" alt="${ep.title}">
       <div class="title">${ep.title}</div>
@@ -76,7 +75,7 @@ app.get("/", (req, res) => {
               out.textContent = "Manifest: ${manifest}";
             })
             .catch(() => {
-              out.textContent = "Errore nella copia del manifest.";
+              out.textContent = "Errore copia manifest.";
             });
         });
       </script>
@@ -85,7 +84,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// — Manifest.json —  
+// — Manifest.json —
 app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
@@ -94,14 +93,14 @@ app.get("/manifest.json", (_req, res) => {
     description: "Canale YouTube Pocoyo in italiano",
     types: ["channel"],
     idPrefixes: ["dk"],
-    resources: ["catalog", "meta", "stream"],
+    resources: ["catalog","meta","stream"],
     catalogs: [
       { type: "channel", id: "pocoyo", name: "Pocoyo 🇮🇹", extra: [] }
     ]
   });
 });
 
-// — Catalog/channel/pocoyo.json —  
+// — Catalog/channel/pocoyo.json —
 app.get("/catalog/channel/pocoyo.json", (_req, res) => {
   const poster = episodes[0]?.poster || "";
   res.json({
@@ -118,7 +117,7 @@ app.get("/catalog/channel/pocoyo.json", (_req, res) => {
   });
 });
 
-// — Meta/channel/dk-pocoyo.json —  
+// — Meta/channel/dk-pocoyo.json —
 app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   const ep = episodes[0] || {};
   res.json({
@@ -134,9 +133,10 @@ app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   });
 });
 
-// — Stream/channel/dk-pocoyo.json — externalUrl + iframe  
+// — Stream/channel/dk-pocoyo.json — usa url + iframe —
 app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
   const streams = episodes.map(ep => {
+    const watchUrl = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
     const embed = `
       <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
         <iframe
@@ -150,7 +150,7 @@ app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
 
     return {
       title: ep.title,
-      externalUrl: `yt:${ep.youtubeId}`,
+      url: watchUrl,
       iframe: embed,
       behaviorHints: { notWebReady: false }
     };
@@ -160,7 +160,7 @@ app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
   res.json({ streams });
 });
 
-// — Avvia il server —  
+// — Avvia il server —
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`);
