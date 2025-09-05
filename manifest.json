@@ -3,10 +3,17 @@
   "version": "2.0.0",
   "name": "Dakids",
   "description": "Video per bambini - Addon pronto all'uso con metadata completi",
-  "logo": "/media/icon.png",
-  "background": "/media/background.jpg",
+  "logo": "https://tuo-dominio.it/media/icon.png",
+  "background": "https://tuo-dominio.it/media/background.jpg",
   "resources": ["catalog", "stream"],
   "types": ["movie"],
   "idPrefixes": ["dakids-"],
-  "catalogs": []
+  "catalogs": [
+    {
+      "type": "movie",
+      "id": "dakids",
+      "name": "Cartoni per Bambini",
+      "extra": [{ "name": "search" }]
+    }
+  ]
 }
