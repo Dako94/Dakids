@@ -21,8 +21,8 @@ try {
 // ===================== FUNZIONI =====================
 function durationToMinutes(duration) {
   const parts = duration.split(":").map(Number);
-  if (parts.length === 3) return parts[0]*60 + parts[1] + parts[2]/60;
-  if (parts.length === 2) return parts[0] + parts[1]/60;
+  if (parts.length === 3) return parts[0] * 60 + parts[1] + parts[2] / 60;
+  if (parts.length === 2) return parts[0] + parts[1] / 60;
   return parseFloat(duration) || 0;
 }
 
@@ -110,7 +110,7 @@ app.get("/manifest.json", (req, res) => {
     description: "Cartoni animati per bambini - iframe embed compatible",
     resources: ["catalog", "stream"],
     types: ["movie"],
-    idPrefixes: ["dk"], // ✅ unico prefisso
+    idPrefixes: ["dk"],
     catalogs: [
       { type: "movie", id: "dakids", name: "Cartoni per Bambini" }
     ]
@@ -119,10 +119,10 @@ app.get("/manifest.json", (req, res) => {
 
 // ===================== CATALOG =====================
 app.get("/catalog/movie/dakids.json", (req, res) => {
-  const metas = allVideos.map((video, index) => {
-    const simpleId = `dk${index + 1}`;
+  // Modifica qui: Usiamo l'ID del file meta.json
+  const metas = allVideos.map(video => {
     return {
-      id: simpleId,
+      id: video.id, // Usa l'ID da meta.json
       type: "movie",
       name: video.title,
       poster: video.thumbnail,
@@ -130,7 +130,7 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
       released: formatDate(video.date),
       runtime: durationToMinutes(video.duration),
       genres: ["Animation", "Kids"],
-      behaviorHints: { bingeGroup: `dk${video.youtubeId}` }
+      behaviorHints: { bingeGroup: video.youtubeId }
     };
   });
   res.json({ metas });
@@ -139,16 +139,20 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
-  const videoIndex = parseInt(videoId.replace("dk", "")) - 1;
-  const video = allVideos[videoIndex];
+  
+  // Modifica qui: Troviamo il video per ID, non per indice
+  const video = allVideos.find(v => v.id === videoId);
 
-  if (!video) return res.status(404).json({ error: "Video not found" });
+  if (!video) {
+    console.error(`❌ Video non trovato con ID: ${videoId}`);
+    return res.status(404).json({ streams: [] });
+  }
 
   res.json({
     streams: [{
       title: video.title,
       url: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`,
-      behaviorHints: { notWebReady: false, bingeGroup: `dk${video.youtubeId}` }
+      behaviorHints: { notWebReady: false, bingeGroup: video.youtubeId }
     }]
   });
 });
