@@ -2,13 +2,12 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import ytdl from "ytdl-core";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// —– Carica gli episodi da meta.json —–
+// — Carica gli episodi da meta.json —
 let episodes = [];
 try {
   episodes = JSON.parse(fs.readFileSync("./meta.json", "utf-8"));
@@ -18,10 +17,10 @@ try {
   episodes = [];
 }
 
-// —– Homepage HTML —–
+// — Homepage HTML —
 app.get("/", (req, res) => {
-  const proto = req.get("x-forwarded-proto") || req.protocol;
-  const host  = req.get("host");
+  const proto   = req.get("x-forwarded-proto") || req.protocol;
+  const host    = req.get("host");
   const baseUrl = `${proto}://${host}`;
 
   res.send(`
@@ -87,7 +86,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// —– Manifest —–
+// — Manifest.json —
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "com.dakids",
@@ -108,7 +107,7 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-// —– Catalog: un solo canale —–
+// — Catalog (un solo canale) —
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
     metas: [
@@ -124,7 +123,7 @@ app.get("/catalog/channel/pocoyo.json", (req, res) => {
   });
 });
 
-// —– Meta del canale —–
+// — Meta del canale —
 app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   res.json({
     meta: {
@@ -139,51 +138,31 @@ app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   });
 });
 
-// —– Proxy video con ytdl-core —–
-app.get("/proxy/:youtubeId.mp4", (req, res) => {
-  const id = req.params.youtubeId;
-  const videoURL = `https://www.youtube.com/watch?v=${id}`;
-
-  const options = {
-    filter: "audioandvideo",
-    quality: "highest",
-    requestOptions: {
-      headers: { Cookie: process.env.YOUTUBE_COOKIES || "" }
-    }
-  };
-
-  const ytStream = ytdl(videoURL, options);
-
-  // Imposta header prima di inviare chunk
-  ytStream.once("info", (_info, format) => {
-    res.setHeader("Content-Type", format.mimeType || "video/mp4");
-    res.setHeader("Accept-Ranges", "bytes");
-  });
-
-  ytStream.on("error", err => {
-    console.error(`[PROXY ERRORE] ${id}:`, err.message);
-    if (!res.headersSent) res.sendStatus(500);
-  });
-
-  ytStream.pipe(res);
-});
-
-// —– Stream: tutti gli episodi via proxy —–
+// — Stream: embed YouTube su tutte le piattaforme —
 app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
-  const proto = req.get("x-forwarded-proto") || req.protocol;
-  const host  = req.get("host");
-  const baseUrl = `${proto}://${host}`;
-
-  const streams = episodes.map(ep => ({
-    title: ep.title,
-    url: `${baseUrl}/proxy/${ep.youtubeId}.mp4`,
-    behaviorHints: { notWebReady: false }
-  }));
+  const streams = episodes.map(ep => {
+    const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
+    return {
+      title: ep.title,
+      iframe: `
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
+          <iframe
+            width="100%"
+            height="100%"
+            src="${embedUrl}"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+        </div>`.trim(),
+      behaviorHints: { notWebReady: false }
+    };
+  });
 
   res.json({ streams });
 });
 
-// —– Avvia il server —–
+// — Avvia il server —
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`);
