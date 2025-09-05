@@ -189,6 +189,47 @@ app.get("/debug", (req, res) => {
   });
 });
 
+// ===================== STREAM TEST FORZATO =====================
+app.get("/stream/movie/test456.json", (req, res) => {
+  console.log("🧪 FORCED TEST - NEW FORMAT");
+  res.json({
+    streams: [
+      {
+        title: "▶️ NUOVO TEST - Iframe Format",
+        url: "https://www.youtube.com/embed/jNQXAC9IVRw?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1",
+        behaviorHints: { 
+          notWebReady: false
+        }
+      }
+    ]
+  });
+});
+
+// ===================== NUOVO STREAM FORMAT =====================
+app.get("/stream/movie/new:videoId.json", (req, res) => {
+  const videoId = req.params.videoId;
+  console.log(`🎬 NEW FORMAT Stream request for: ${videoId}`);
+  
+  const youtubeId = videoId.startsWith('tt_') ? videoId.substring(3) : videoId.startsWith('tt') ? videoId.substring(2) : videoId;
+  const video = allVideos.find(v => v.youtubeId === youtubeId || v.id === videoId);
+  
+  if (!video) {
+    return res.status(404).json({ streams: [], error: "Video not found" });
+  }
+
+  console.log(`✅ NEW FORMAT Found: ${video.title}`);
+  
+  res.json({
+    streams: [{
+      title: `▶️ ${video.title}`,
+      url: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1`,
+      behaviorHints: { 
+        notWebReady: false
+      }
+    }]
+  });
+});
+
 // ===================== AVVIO SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
