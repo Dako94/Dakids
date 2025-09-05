@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import express from "express";
 import cors from "cors";
 import fs from "fs";
@@ -7,50 +6,25 @@ const YTDlpWrap = pkg.default;
 
 const app = express();
 app.use(cors());
-app.use(express.json());
-
-// ===================== CONFIG YT-DLP + COOKIES =====================
-const cookiesEnv = process.env.YTDLP_COOKIES || process.env.YOUTUBE_COOKIES;
-if (cookiesEnv) {
-  fs.writeFileSync("/tmp/cookies.txt", cookiesEnv);
-  console.log("✅ Cookies salvati in /tmp/cookies.txt");
-}
 
 const ytDlpWrap = new YTDlpWrap("yt-dlp");
+const cookiesEnv = process.env.YTDLP_COOKIES;
+if (cookiesEnv) fs.writeFileSync("/tmp/cookies.txt", cookiesEnv);
 
-ytDlpWrap.execPromise(["--version"])
-  .then(v => console.log(`✅ yt-dlp versione: ${v.trim()}`))
-  .catch(err => {
-    console.error("❌ yt-dlp non trovato:", err);
-    console.error("Assicurati che 'pip install -U yt-dlp' sia nel Build Command di Render");
-  });
-
-// ===================== LETTURA META.JSON =====================
-let allVideos = [];
+let episodes = [];
 try {
-  const data = fs.readFileSync("./meta.json", "utf-8");
-  allVideos = JSON.parse(data);
-  console.log(`📦 Caricati ${allVideos.length} video`);
+  const raw = fs.readFileSync("./meta.json", "utf-8");
+  episodes = JSON.parse(raw);
+  console.log(`✅ Caricati ${episodes.length} episodi`);
 } catch (err) {
   console.error("❌ Errore meta.json:", err);
-  allVideos = [];
 }
 
-// ===================== FUNZIONI =====================
 async function getDirectUrl(youtubeId) {
   try {
-    const args = [
-      `https://www.youtube.com/watch?v=${youtubeId}`,
-      "-f", "best[ext=mp4]",
-      "-g"
-    ];
-    if (cookiesEnv) {
-      args.push("--cookies", "/tmp/cookies.txt");
-    }
-
-    console.log(`▶ yt-dlp args: ${args.join(" ")}`);
+    const args = [`https://www.youtube.com/watch?v=${youtubeId}`, "-f", "best[ext=mp4]", "-g"];
+    if (cookiesEnv) args.push("--cookies", "/tmp/cookies.txt");
     const output = await ytDlpWrap.execPromise(args);
-    console.log(`✅ yt-dlp output: ${output.trim()}`);
     return output.trim();
   } catch (err) {
     console.error("❌ yt-dlp error:", err);
@@ -58,136 +32,68 @@ async function getDirectUrl(youtubeId) {
   }
 }
 
-// ===================== HOME PAGE =====================
-app.get("/", (req, res) => {
-  const protocol = req.get('x-forwarded-proto') || req.protocol;
-  const host = req.get('host');
-  const baseUrl = `${protocol}://${host}`;
-
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="it">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Dakids TV 🎈</title>
-      <style>
-        body { font-family: 'Comic Sans MS', cursive, sans-serif; background: linear-gradient(to bottom, #fffae3, #ffe4e1); color: #333; text-align: center; padding: 2rem; }
-        h1 { color: #ff6f61; font-size: 2.5rem; }
-        p { font-size: 1.2rem; }
-        button { background: #4ecdc4; color: white; border: none; padding: 15px 25px; font-size: 1.2rem; border-radius: 30px; cursor: pointer; margin-top: 1rem; box-shadow: 0 4px #3bb3a3; }
-        button:hover { background: #45b3a3; }
-        .video-preview { display: inline-block; margin: 1rem; border: 3px solid #ffd700; border-radius: 15px; overflow: hidden; width: 200px; background: white; }
-        .video-preview img { width: 100%; display: block; }
-        .video-title { padding: 0.5rem; background: #fffacd; font-size: 1rem; }
-      </style>
-    </head>
-    <body>
-      <h1>🎉 Benvenuto su Dakids TV! 🎨</h1>
-      <p>Cartoni e video divertenti per bambini 👶📺</p>
-      <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
-      <p style="font-size:0.9rem; color:#555;">Poi incollalo in Stremio per aggiungere l'addon</p>
-      <hr>
-      <h2>📺 Ultimi Video</h2>
-      <div>
-        ${allVideos.slice(0, 6).map(video => `
-          <div class="video-preview">
-            <img src="${video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`}" alt="${video.name || 'Video'}">
-            <div class="video-title">${video.name || 'Senza titolo'}</div>
-          </div>
-        `).join('')}
-      </div>
-      <script>
-        function copyManifest() {
-          navigator.clipboard.writeText("${baseUrl}/manifest.json")
-            .then(() => alert("✅ Manifest copiato negli appunti!"))
-            .catch(() => alert("❌ Impossibile copiare il manifest"));
-        }
-      </script>
-    </body>
-    </html>
-  `);
-});
-
-// ===================== MANIFEST =====================
+// Manifest
 app.get("/manifest.json", (req, res) => {
   res.json({
-    id: "com.dakids.Stremio",
-    version: "3.0.0",
-    name: "Dakids",
-    description: "Video per bambini - riproduzione diretta da YouTube",
-    logo: "https://tuo-dominio.it/media/icon.png",
-    background: "https://tuo-dominio.it/media/background.jpg",
-    resources: ["catalog", "stream"],
+    id: "com.dakids.pocoyo",
+    version: "1.0.0",
+    name: "Pocoyo 🇮🇹",
+    description: "Episodi divertenti per bambini",
     types: ["channel"],
     idPrefixes: ["dk"],
+    resources: ["catalog", "stream"],
     catalogs: [
       {
         type: "channel",
-        id: "dakids",
-        name: "Cartoni per Bambini",
-        extra: [{ name: "search", isRequired: false }]
+        id: "pocoyo",
+        name: "Pocoyo 🇮🇹",
+        extra: []
       }
     ]
   });
 });
 
-// ===================== CATALOG =====================
-app.get("/catalog/channel/dakids.json", (req, res) => {
-  const metas = allVideos.map(video => ({
-    id: video.id || `dk${video.youtubeId}`,
-    type: "channel",
-    name: video.name || "Video senza titolo",
-    poster: video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-    description: video.description || "Nessuna descrizione",
-    released: video.released || "2025-01-01",
-    runtime: video.runtime || "5 min",
-    genres: video.genres || ["Animation", "Kids"],
-    behaviorHints: video.behaviorHints || {}
-  }));
-
-  res.json({ metas });
-});
-
-// ===================== STREAM =====================
-app.get("/stream/channel/:videoId.json", async (req, res) => {
-  const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.id === videoId || `dk${v.id}` === videoId);
-
-  if (!video || !video.youtubeId) {
-    console.log(`⚠️ Video non trovato per ID: ${videoId}`);
-    return res.status(404).json({ streams: [] });
-  }
-
-  const directUrl = await getDirectUrl(video.youtubeId);
-
-  if (!directUrl) {
-    console.log(`⚠️ Nessun URL diretto per ${video.youtubeId}, uso fallback YouTube`);
-    return res.json({
-      streams: [{
-        title: `${video.name || "Video"} (Apri su YouTube)`,
-        externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
-        behaviorHints: { notWebReady: true }
-      }]
-    });
-  }
-
+// Catalog — mostra solo il canale
+app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
-    streams: [{
-      title: video.name || "Video",
-      url: directUrl,
-      behaviorHints: {
-        notWebReady: false,
-        bingeGroup: video.youtubeId
+    metas: [
+      {
+        id: "dk-pocoyo",
+        type: "channel",
+        name: "Pocoyo 🇮🇹",
+        poster: episodes[0]?.poster || "",
+        description: "Episodi divertenti per bambini",
+        genres: ["Animation", "Kids"]
       }
-    }]
+    ]
   });
 });
 
-// ===================== SERVER =====================
+// Stream — restituisce tutti gli episodi
+app.get("/stream/channel/dk-pocoyo.json", async (req, res) => {
+  const streams = await Promise.all(
+    episodes.map(async ep => {
+      const url = await getDirectUrl(ep.youtubeId);
+      if (!url) {
+        return {
+          title: `${ep.title} (Apri su YouTube)`,
+          externalUrl: `https://www.youtube.com/watch?v=${ep.youtubeId}`,
+          behaviorHints: { notWebReady: true }
+        };
+      }
+      return {
+        title: ep.title,
+        url,
+        behaviorHints: { notWebReady: false }
+      };
+    })
+  );
+
+  res.json({ streams });
+});
+
+// Server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Dakids Addon attivo sulla porta ${PORT}`);
-  console.log(`📺 Video disponibili: ${allVideos.length}`);
-  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
+app.listen(PORT, () => {
+  console.log(`🚀 Pocoyo Addon attivo su http://localhost:${PORT}`);
 });
