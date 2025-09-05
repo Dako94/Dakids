@@ -7,8 +7,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Carica la lista di episodi (mettine titolo, youtubeId e poster in meta.json)
-let episodes = [];
+// — Carica episodi da meta.json —
+// meta.json deve contenere un array di oggetti:
+// { "youtubeId": "MCYRCGxNyZk", "title": "Titolo episodio", "poster": "https://..." }
+let episodes;
 try {
   episodes = JSON.parse(fs.readFileSync("./meta.json", "utf-8"));
   console.log(`✅ Caricati ${episodes.length} episodi`);
@@ -17,7 +19,7 @@ try {
   episodes = [];
 }
 
-// Homepage di cortesia
+// — Homepage di cortesia —
 app.get("/", (req, res) => {
   const proto   = req.get("x-forwarded-proto") || req.protocol;
   const host    = req.get("host");
@@ -25,13 +27,13 @@ app.get("/", (req, res) => {
   res.send(`
     <html><body style="font-family:sans-serif;text-align:center;padding:2rem">
       <h1>🎉 Dakids – Pocoyo 🇮🇹</h1>
-      <p>Copia questo URL e incollalo in Stremio ➡️</p>
+      <p>Copia questo URL in Stremio:</p>
       <code>${baseUrl}/manifest.json</code>
     </body></html>
   `);
 });
 
-// Manifest per Stremio
+// — Manifest.json —
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "com.dakids",
@@ -47,7 +49,7 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-// Catalog (un solo canale)
+// — Catalog/channel/pocoyo.json —
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
     metas: [
@@ -63,7 +65,7 @@ app.get("/catalog/channel/pocoyo.json", (req, res) => {
   });
 });
 
-// Meta del canale
+// — Meta/channel/dk-pocoyo.json —
 app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   res.json({
     meta: {
@@ -78,28 +80,38 @@ app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   });
 });
 
-// Stream: restituisce SOLO iframe YouTube per OGNI piattoforma
+// — Stream/channel/dk-pocoyo.json —
+// Restituisce per ogni episodio sia l'iframe (per Web) che l'url (per tutti gli altri client)
 app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
-  const streams = episodes.map(ep => ({
-    title: ep.title,
-    iframe: `
-      <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
-        <iframe
-          width="100%"
-          height="100%"
-          src="https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen>
-        </iframe>
-      </div>`.trim(),
-    behaviorHints: { notWebReady: false }
-  }));
+  const streams = episodes.map(ep => {
+    const watchUrl  = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
+    const embedUrl  = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
 
+    return {
+      title: ep.title,
+      // usato da clienti nativi (Desktop, Android, TV)
+      url: watchUrl,
+      // usato da Stremio Web per montare l'iframe
+      iframe: `
+        <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
+          <iframe
+            width="100%"
+            height="100%"
+            src="${embedUrl}"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen>
+          </iframe>
+        </div>`.trim(),
+      behaviorHints: { notWebReady: false }
+    };
+  });
+
+  console.log("🔍 /stream returned", streams.length, "streams");
   res.json({ streams });
 });
 
-// Avvia server
+// — Avvia il server —
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`);
