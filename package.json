@@ -1,15 +1,29 @@
 {
   "name": "dakids-addon",
   "version": "1.0.0",
-  "description": "Addon Stremio ita",
+  "description": "Addon Stremio personale per cartoni 🇮🇹 ",
   "main": "addon.js",
   "type": "module",
   "scripts": {
     "start": "node addon.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "axios": "^1.6.0",
     "cors": "^2.8.5",
-    "youtube-dl-exec": "^3.0.4"
-  }
+    "express": "^4.18.2",
+    "puppeteer": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "stremio",
+    "addon",
+    "youtube",
+    "puppeteer",
+    "pocoyo",
+    "dakids"
+  ],
+  "author": "Davide",
+  "license": "MIT"
 }
