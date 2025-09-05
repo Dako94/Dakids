@@ -2,67 +2,50 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import pkg from "yt-dlp-wrap";
-const YTDlpWrap = pkg.default;
+import ytdl from "ytdl-core";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===== CONFIG YT-DLP + COOKIES =====
-const cookiesEnv = process.env.YTDLP_COOKIES;
-if (cookiesEnv) {
-  fs.writeFileSync("/tmp/cookies.txt", cookiesEnv);
-  console.log("✅ Cookies salvati in /tmp/cookies.txt");
-}
-
-const ytDlpWrap = new YTDlpWrap("yt-dlp");
-ytDlpWrap.execPromise(["--version"])
-  .then(v => console.log(`✅ yt-dlp versione: ${v.trim()}`))
-  .catch(err => console.error("❌ yt-dlp non trovato:", err));
-
-// ===== LETTURA META.JSON (solo episodi) =====
+// —– Carica episodi da meta.json —–
 let episodes = [];
 try {
   episodes = JSON.parse(fs.readFileSync("./meta.json", "utf-8"));
-  console.log(`📦 Caricati ${episodes.length} episodi`);
+  console.log(`✅ Caricati ${episodes.length} episodi`);
 } catch (err) {
-  console.error("❌ Errore meta.json:", err);
+  console.error("❌ Errore leggendo meta.json:", err);
+  episodes = [];
 }
 
-// ===== HELPERS =====
+// —– Ottieni URL diretto con ytdl-core —–
 async function getDirectUrl(youtubeId) {
   try {
-    const args = [
-      `https://www.youtube.com/watch?v=${youtubeId}`,
-      "-f", "best[ext=mp4]",
-      "-g"
-    ];
-    if (cookiesEnv) args.push("--cookies", "/tmp/cookies.txt");
-
-    console.log("▶ yt-dlp args:", args.join(" "));
-    const out = await ytDlpWrap.execPromise(args);
-    console.log("✅ yt-dlp output:", out.trim());
-    return out.trim();
+    const info = await ytdl.getInfo(youtubeId);
+    const format = ytdl.chooseFormat(info.formats, {
+      filter: f => f.container === "mp4" && f.hasVideo && f.hasAudio,
+      quality: "highest"
+    });
+    console.log("✅ ytdl-core URL:", format.url);
+    return format.url;
   } catch (err) {
-    console.error("❌ yt-dlp error:", err);
+    console.error("❌ ytdl-core error:", err);
     return null;
   }
 }
 
-// ===== HOME PAGE =====
+// —– Homepage HTML —–
 app.get("/", (req, res) => {
   const proto = req.get("x-forwarded-proto") || req.protocol;
-  const host = req.get("host");
+  const host  = req.get("host");
   const baseUrl = `${proto}://${host}`;
-
   res.send(`
     <!DOCTYPE html>
     <html lang="it">
     <head>
       <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width,initial-scale=1.0">
-      <title>Pocoyo 🇮🇹 Addon</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Dakids – Pocoyo 🇮🇹</title>
       <style>
         body {
           font-family: 'Comic Sans MS', cursive, sans-serif;
@@ -90,10 +73,13 @@ app.get("/", (req, res) => {
       </style>
     </head>
     <body>
-      <h1>🎉 Benvenuto su Pocoyo 🇮🇹 TV!</h1>
+      <h1>🎉 Benvenuto su Dakids – Pocoyo 🇮🇹</h1>
       <p>Episodi divertenti per bambini 👶📺</p>
-      <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
-      <p style="font-size:0.9rem; color:#555;">URL: ${baseUrl}/manifest.json</p>
+      <button onclick="copyManifest()">📜 Copia Manifest</button>
+      <p style="font-size:0.9rem; color:#555;">
+        Incolla in Stremio questo URL:<br>
+        <code>${baseUrl}/manifest.json</code>
+      </p>
       <hr>
       <h2>📺 Episodi disponibili</h2>
       <div>
@@ -116,13 +102,13 @@ app.get("/", (req, res) => {
   `);
 });
 
-// ===== MANIFEST =====
+// —– Manifest —–
 app.get("/manifest.json", (req, res) => {
   res.json({
-    id: "com.dakids.pocoyo",
+    id: "com.dakids",
     version: "1.0.0",
-    name: "Pocoyo 🇮🇹",
-    description: "Episodi divertenti per bambini",
+    name: "Dakids",
+    description: "Pocoyo 🇮🇹 – Episodi per bambini da YouTube",
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
@@ -137,7 +123,7 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-// ===== CATALOG (un solo canale) =====
+// —– Catalog (un solo canale) —–
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
     metas: [
@@ -153,12 +139,8 @@ app.get("/catalog/channel/pocoyo.json", (req, res) => {
   });
 });
 
-// ===== META (i dati del canale) =====
-app.get("/meta/channel/:channelId.json", (req, res) => {
-  const cid = req.params.channelId;
-  if (cid !== "dk-pocoyo") {
-    return res.status(404).json({ meta: null });
-  }
+// —– Meta del canale —–
+app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   res.json({
     meta: {
       id: "dk-pocoyo",
@@ -172,7 +154,7 @@ app.get("/meta/channel/:channelId.json", (req, res) => {
   });
 });
 
-// ===== STREAM (tutti gli episodi) =====
+// —– Stream: tutti gli episodi —–
 app.get("/stream/channel/dk-pocoyo.json", async (req, res) => {
   const streams = await Promise.all(episodes.map(async ep => {
     const url = await getDirectUrl(ep.youtubeId);
@@ -189,12 +171,11 @@ app.get("/stream/channel/dk-pocoyo.json", async (req, res) => {
       behaviorHints: { notWebReady: false }
     };
   }));
-
   res.json({ streams });
 });
 
-// ===== SERVER =====
+// —– Avvia il server —–
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Pocoyo Addon attivo su http://localhost:${PORT}`);
+  console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`);
 });
