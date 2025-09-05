@@ -30,7 +30,7 @@ let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
   allVideos = JSON.parse(data);
-  console.log(📦 Caricati ${allVideos.length} video);
+  console.log(`📦 Caricati ${allVideos.length} video`);
 } catch (err) {
   console.error("❌ Errore meta.json:", err);
   allVideos = [];
