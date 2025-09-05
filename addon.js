@@ -146,7 +146,7 @@ app.get("/manifest.json", (req, res) => {
     background: "https://i.imgur.com/gO6vKzB.png",
     resources: ["catalog", "stream"],
     types: ["movie"],
-    idPrefixes: ["dk_"],
+    idPrefixes: ["dk"],
     catalogs: [
       {
         type: "movie",
