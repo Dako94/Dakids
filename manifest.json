@@ -2,13 +2,13 @@
   "id": "com.dakids",
   "version": "1.0.0",
   "name": "Dakids 🇮🇹",
-  "description": "Canale per bambini in italiano 🇮🇹",
-  "types": ["channel"],
+  "description": "Episodi in italiano da YouTube",
+  "types": ["movie"],
   "idPrefixes": ["dk"],
   "resources": ["catalog","meta","stream"],
   "catalogs": [
     {
-      "type": "channel",
+      "type": "movie",
       "id": "pocoyo",
       "name": "Pocoyo 🇮🇹",
       "extra": []
