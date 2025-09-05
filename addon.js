@@ -143,20 +143,22 @@ app.get("/manifest.json", (req, res) => {
 // ===================== CATALOG =====================
 app.get("/catalog/channel/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
-    const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
+    const runtimeInMinutes = durationToMinutes(video.duration || "0:00");
+    const releasedDate = video.date ? formatDate(video.date) : undefined;
+
     return {
       id: video.id.startsWith("dk") ? video.id : `dk${video.id}`,
       type: "channel",
-      name: video.title,
+      name: video.title || "Video senza titolo",
       poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-      description: video.title,
-      released: formatDate(video.date),
-      runtime: `${runtimeInMinutes} min`,
-      posterShape: "regular",
+      description: video.title || "Nessuna descrizione",
+      released: releasedDate,
+      runtime: `${Math.floor(runtimeInMinutes)} min`,
       genres: ["Animation", "Kids"],
       behaviorHints: { bingeGroup: video.youtubeId }
     };
   });
+
   res.json({ metas });
 });
 
@@ -165,7 +167,7 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
   const video = allVideos.find(v => v.id === videoId);
 
-  if (!video) {
+  if (!video || !video.youtubeId) {
     return res.status(404).json({ streams: [] });
   }
 
@@ -185,7 +187,10 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
     streams: [{
       title: video.title,
       url: directUrl,
-      behaviorHints: { notWebReady: false, bingeGroup: video.youtubeId }
+      behaviorHints: {
+        notWebReady: false,
+        bingeGroup: video.youtubeId
+      }
     }]
   });
 });
