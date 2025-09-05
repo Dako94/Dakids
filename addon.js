@@ -8,7 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const ytDlpWrap = new YTDlpWrap(); // usa yt-dlp installato nel sistema
+// ===================== CONFIG YT-DLP =====================
+// Usa il binario yt-dlp dal PATH
+const ytDlpWrap = new YTDlpWrap("yt-dlp");
 
 // ===================== LETTURA META.JSON =====================
 let allVideos = [];
