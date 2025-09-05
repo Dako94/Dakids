@@ -68,11 +68,11 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   metas.unshift({
     id: "test123",
     type: "movie", 
-    name: "🧪 TEST VIDEO - Click to test (3 options)",
-    poster: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-    description: "Video di test per verificare il funzionamento",
+    name: "🧪 TEST VIDEO - Me at the zoo (3 formats)",
+    poster: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg",
+    description: "Video di test - primo video mai caricato su YouTube",
     genres: ["Test"],
-    released: "2024"
+    released: "2005"
   });
   
   console.log(`📦 Sending ${metas.length} videos to Stremio`);
