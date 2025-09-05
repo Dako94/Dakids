@@ -2,12 +2,13 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
+import ytdl from "ytdl-core";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// — Carica gli episodi da meta.json —
+// — Carica episodi da meta.json —
 let episodes = [];
 try {
   episodes = JSON.parse(fs.readFileSync("./meta.json", "utf-8"));
@@ -32,9 +33,11 @@ app.get("/", (req, res) => {
         <title>Dakids – Pocoyo 🇮🇹</title>
         <style>
           body { font-family: sans-serif; background: #fffbe6; text-align: center; padding: 2rem; }
-          h1 { color: #ff6f61; } 
+          button { background: #4ecdc4; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
+          button:hover { background: #45b3a3; }
           .video { display: inline-block; margin: 1rem; width: 200px; }
-          .video img { width: 100%; }
+          .video img { width: 100%; border-radius: 10px; }
+          .video-title { margin-top: 0.5rem; font-size: 0.9rem; }
         </style>
       </head>
       <body>
@@ -48,7 +51,7 @@ app.get("/", (req, res) => {
           ${episodes.map(ep => `
             <div class="video">
               <img src="${ep.poster}" alt="${ep.title}">
-              <div>${ep.title}</div>
+              <div class="video-title">${ep.title}</div>
             </div>
           `).join("")}
         </div>
@@ -76,16 +79,14 @@ app.get("/manifest.json", (req, res) => {
 // — Catalog: un solo canale —
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
-    metas: [
-      {
-        id: "dk-pocoyo",
-        type: "channel",
-        name: "Pocoyo 🇮🇹",
-        poster: episodes[0]?.poster || "",
-        description: "Episodi divertenti per bambini",
-        genres: ["Animation","Kids"]
-      }
-    ]
+    metas: [{
+      id: "dk-pocoyo",
+      type: "channel",
+      name: "Pocoyo 🇮🇹",
+      poster: episodes[0]?.poster || "",
+      description: "Episodi divertenti per bambini",
+      genres: ["Animation","Kids"]
+    }]
   });
 });
 
@@ -104,13 +105,53 @@ app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   });
 });
 
-// — Stream: usa externalUrl per YouTube —
-app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
-  const streams = episodes.map(ep => ({
-    title: ep.title,
-    externalUrl: `https://www.youtube.com/watch?v=${ep.youtubeId}`,
-    behaviorHints: { notWebReady: false }
-  }));
+// — Restituisce URL progressivi o HLS per tutte le piattaforme —
+async function resolveStreamUrl(youtubeId) {
+  const videoUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
+  try {
+    const info = await ytdl.getInfo(videoUrl, {
+      requestOptions: { headers: { Cookie: process.env.YOUTUBE_COOKIES || "" } }
+    });
+
+    // 1. HLS (m3u8) stream
+    const hls = ytdl.chooseFormat(info.formats, f =>
+      f.mimeType && f.mimeType.includes("mpegurl")
+    );
+    if (hls && hls.url) {
+      console.log(`[STREAM] ${youtubeId} → HLS URL`);
+      return hls.url;
+    }
+
+    // 2. MP4 progressive stream (audio+video)
+    const prog = ytdl.chooseFormat(info.formats, f =>
+      f.container === "mp4" && f.hasVideo && f.hasAudio
+    );
+    if (prog && prog.url) {
+      console.log(`[STREAM] ${youtubeId} → MP4 URL`);
+      return prog.url;
+    }
+
+  } catch (err) {
+    console.error(`[ERROR] risolvendo stream ${youtubeId}:`, err.message);
+  }
+
+  // 3. Fallback a link standard YouTube (plugin ufficiale)
+  return videoUrl;
+}
+
+// — Stream: tutti gli episodi —
+app.get("/stream/channel/dk-pocoyo.json", async (req, res) => {
+  const streams = await Promise.all(
+    episodes.map(async ep => {
+      const url = await resolveStreamUrl(ep.youtubeId);
+      return {
+        title: ep.title,
+        url,
+        behaviorHints: { notWebReady: false }
+      };
+    })
+  );
+
   res.json({ streams });
 });
 
