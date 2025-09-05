@@ -1,4 +1,4 @@
-!/usr/bin/env node
+#!/usr/bin/env node
 import express from "express";
 import cors from "cors";
 import fs from "fs";
