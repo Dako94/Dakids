@@ -1,15 +1,3 @@
-// — Trust proxy per leggere x-forwarded-proto dietro Render —
-app.enable("trust proxy");
-
-// — Redirect automatico HTTP → HTTPS —
-app.use((req, res, next) => {
-  if (req.get("x-forwarded-proto") === "http") {
-    const host = req.get("host");
-    const url  = `https://${host}${req.originalUrl}`;
-    return res.redirect(301, url);
-  }
-  next();
-});
 #!/usr/bin/env node
 import express from "express";
 import cors from "cors";
@@ -19,6 +7,16 @@ import path from "path";
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// — Permetti di leggere x-forwarded-proto dietro Render e reindirizza HTTP → HTTPS —
+app.enable("trust proxy");
+app.use((req, res, next) => {
+  if (req.get("x-forwarded-proto") === "http") {
+    const host = req.get("host");
+    return res.redirect(301, `https://${host}${req.originalUrl}`);
+  }
+  next();
+});
 
 // — Carica la lista di episodi da meta.json —
 let episodes = [];
@@ -30,12 +28,11 @@ try {
   console.error("❌ Errore leggendo meta.json:", err.message);
 }
 
-// — Pagina di installazione su “/” —
+// — Pagina di installazione alla root “/” —
 app.get("/", (req, res) => {
   const baseUrl     = `${req.protocol}://${req.get("host")}`;
   const manifestUrl = `${baseUrl}/manifest.json`;
 
-  // crea le card dai poster
   const cardsHtml = episodes.map(ep => `
     <div class="card">
       <img src="${ep.poster}" alt="${ep.title}">
@@ -66,19 +63,18 @@ app.get("/", (req, res) => {
     </head>
     <body>
       <h1>🎉 Dakids Addon</h1>
-      <p>Clicca sui personaggi per scoprire i video, o copia il manifest:</p>
-      <div class="grid">
-        ${cardsHtml}
-      </div>
+      <p>Clicca sui personaggi per scoprire i video o copia il manifest:</p>
+      <div class="grid">${cardsHtml}</div>
       <button id="copy-btn">📋 Copia Manifest</button>
       <div id="manifest-url"></div>
       <script>
         const btn = document.getElementById("copy-btn");
         const out = document.getElementById("manifest-url");
+        const url = "${manifestUrl}";
         btn.addEventListener("click", () => {
-          navigator.clipboard.writeText("${manifestUrl}")
+          navigator.clipboard.writeText(url)
             .then(() => {
-              out.textContent = "Manifest copiato: ${manifestUrl}";
+              out.textContent = "Manifest copiato: " + url;
               btn.textContent = "✅ Copiato!";
             })
             .catch(() => {
@@ -91,7 +87,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// — Manifest.json —
+// — Manifest.json — 
 app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
@@ -107,7 +103,7 @@ app.get("/manifest.json", (_req, res) => {
   });
 });
 
-// — Catalog/channel/pocoyo.json —
+// — Catalog per il channel “pocoyo” —
 app.get("/catalog/channel/pocoyo.json", (_req, res) => {
   res.json({
     metas: [
@@ -123,7 +119,7 @@ app.get("/catalog/channel/pocoyo.json", (_req, res) => {
   });
 });
 
-// — Meta/channel/dk-pocoyo.json —
+// — Meta del channel —
 app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   const ep = episodes[0] || {};
   res.json({
@@ -139,7 +135,7 @@ app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   });
 });
 
-// — Stream/channel/dk-pocoyo.json —
+// — Stream: usa externalUrl al plugin YouTube —
 app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
   const streams = episodes.map(ep => ({
     title: ep.title,
