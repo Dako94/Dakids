@@ -1,7 +1,7 @@
 {
   "name": "dakids-addon",
   "version": "1.0.0",
-  "description": "Addon Stremio per bambini con video embeddabili da YouTube",
+  "description": "Addon Stremio per bambini con video YouTube embeddabili",
   "main": "addon.js",
   "type": "module",
   "scripts": {
