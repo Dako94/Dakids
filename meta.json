@@ -1,4 +1,13 @@
 [
+  
+  {
+    "id": "dk_84F0RO6o8M",
+    "type": "channel",
+  "name": "Test Channel",
+  "poster": "https://i.imgur.com/K1264cT.png",
+  "description": "Canale di prova"
+  },
+  
   {
     "id": "dk_84F0RO6o8M",
     "youtubeId": "_84F0RO6o8M",
