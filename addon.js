@@ -104,21 +104,21 @@ app.get("/health", (req, res) => {
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
   res.json({
-    id: "dakids.addon",
-    version: "1.0.2",
-    name: "Dakids TV",
-    description: "Cartoni animati per bambini - compatibile con link esterni YouTube",
+    id: "com.dakids.Stremio",
+    version: "2.0.0",
+    name: "Dakids",
+    description: "Video per bambini - Addon pronto all'uso con metadata completi",
+    logo: "https://i.imgur.com/K1264cT.png",
+    background: "https://i.imgur.com/gO6vKzB.png",
     resources: ["catalog", "stream"],
     types: ["movie"],
-    idPrefixes: ["dk"],
+    idPrefixes: ["dakids-"],
     catalogs: [
       {
         type: "movie",
         id: "dakids",
         name: "Cartoni per Bambini",
-        logo: "https://i.imgur.com/K1264cT.png",
-        poster: "https://i.imgur.com/gO6vKzB.png",
-        extra: [{ name: "search" }, { name: "skip" }]
+        extra: [{ name: "search", isRequired: false }]
       }
     ]
   });
@@ -129,13 +129,13 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
     const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
     return {
-      id: video.youtubeId, // uso youtubeId come ID
+      id: video.youtubeId,
       type: "movie",
       name: video.title,
       poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
       description: video.title,
       released: formatDate(video.date),
-      runtime: `${runtimeInMinutes} min`, 
+      runtime: `${runtimeInMinutes} min`,
       posterShape: "regular",
       genres: ["Animation", "Kids"],
       behaviorHints: { bingeGroup: video.youtubeId }
@@ -147,7 +147,6 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
-  
   const video = allVideos.find(v => v.youtubeId === videoId);
 
   if (!video) {
