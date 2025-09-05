@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import puppeteer from "puppeteer";
 
 const app = express();
 app.use(cors());
@@ -28,33 +27,7 @@ try {
   console.error("❌ Errore meta.json:", err.message);
 }
 
-// — Converte cookies.txt da variabile —
-function parseCookiesTxt(raw) {
-  const lines = raw.split("\n").filter(l => l && !l.startsWith("#"));
-  return lines.map(line => {
-    const [domain, flag, path, secure, expiry, name, value] = line.split("\t");
-    return {
-      domain,
-      path,
-      name,
-      value,
-      httpOnly: false,
-      secure: secure === "TRUE",
-      expires: expiry === "0" ? undefined : Number(expiry)
-    };
-  });
-}
-
-let cookies = [];
-try {
-  const rawCookiesTxt = process.env.YOUTUBE_COOKIES;
-  cookies = parseCookiesTxt(rawCookiesTxt);
-  console.log(`🔐 Cookie YouTube caricati`);
-} catch (err) {
-  console.error("❌ Errore parsing cookie:", err.message);
-}
-
-// — Pagina HTML con personaggi —
+// — Homepage HTML con personaggi —
 app.get("/", (req, res) => {
   const base = `${req.protocol}://${req.get("host")}`;
   const manifest = `${base}/manifest.json`;
@@ -155,39 +128,19 @@ app.get("/meta/channel/:id.json", (req, res) => {
   });
 });
 
-// — Stream —
-app.get("/stream/channel/:id.json", async (req, res) => {
+// — Stream (embed diretto) —
+app.get("/stream/channel/:id.json", (req, res) => {
   const ep = episodes.find(e => `dk-${e.youtubeId}` === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
-  try {
-    const browser = await puppeteer.launch({ headless: "new" });
-    const page = await browser.newPage();
-    await page.setCookie(...cookies);
-    await page.goto(`https://www.youtube.com/watch?v=${ep.youtubeId}`, { waitUntil: "networkidle2" });
-
-    const embedUrl = await page.evaluate(() => {
-      const iframe = document.querySelector("iframe");
-      return iframe ? iframe.src : null;
-    });
-
-    await browser.close();
-
-    if (embedUrl) {
-      res.json({
-        streams: [{
-          title: ep.title,
-          url: embedUrl,
-          behaviorHints: { notWebReady: false }
-        }]
-      });
-    } else {
-      res.json({ streams: [] });
-    }
-  } catch (err) {
-    console.error(`⚠️ Errore stream ${ep.title}:`, err.message);
-    res.json({ streams: [] });
-  }
+  const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}`;
+  res.json({
+    streams: [{
+      title: ep.title,
+      url: embedUrl,
+      behaviorHints: { notWebReady: false }
+    }]
+  });
 });
 
 // — Avvia il server —
