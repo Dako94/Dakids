@@ -112,7 +112,7 @@ app.get("/manifest.json", (req, res) => {
     background: "https://i.imgur.com/gO6vKzB.png",
     resources: ["catalog", "stream"],
     types: ["movie"],
-    idPrefixes: ["dakids-"],
+    idPrefixes: ["dk_"],
     catalogs: [
       {
         type: "movie",
@@ -129,7 +129,7 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
     const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
     return {
-      id: video.youtubeId,
+      id: video.id, // <-- ora uso SEMPRE id dal meta.json
       type: "movie",
       name: video.title,
       poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
@@ -147,7 +147,7 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.youtubeId === videoId);
+  const video = allVideos.find(v => v.id === videoId); // <-- cerco per id
 
   if (!video) {
     console.error(`❌ Video non trovato con ID: ${videoId}`);
