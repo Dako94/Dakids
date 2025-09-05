@@ -6,11 +6,11 @@
   "logo": "https://tuo-dominio.it/media/icon.png",
   "background": "https://tuo-dominio.it/media/background.jpg",
   "resources": ["catalog", "stream"],
-  "types": ["movie"],
-  "idPrefixes": ["dakids-"],
+  "types": ["channel"],
+  "idPrefixes": ["dk"],
   "catalogs": [
     {
-      "type": "movie",
+      "type": "channel",
       "id": "dakids",
       "name": "Cartoni per Bambini",
       "extra": [{ "name": "search" }]
