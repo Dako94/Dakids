@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+!/usr/bin/env node
 import express from "express";
 import cors from "cors";
 import fs from "fs";
@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // ===================== CONFIG YT-DLP + COOKIES =====================
-const cookiesEnv = process.env.YTDLP_COOKIES || process.env.YOUTUBE_COOKIES;
+const cookiesEnv = process.env.YTDLPCOOKIES || process.env.YOUTUBECOOKIES;
 if (cookiesEnv) {
   fs.writeFileSync("/tmp/cookies.txt", cookiesEnv);
   console.log("🍪 Cookies salvati in /tmp/cookies.txt");
@@ -30,7 +30,7 @@ let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
   allVideos = JSON.parse(data);
-  console.log(`📦 Caricati ${allVideos.length} video`);
+  console.log(📦 Caricati ${allVideos.length} video);
 } catch (err) {
   console.error("❌ Errore meta.json:", err);
   allVideos = [];
@@ -54,7 +54,7 @@ function formatDate(date) {
 async function getDirectUrl(youtubeId) {
   try {
     const args = [
-      `https://www.youtube.com/watch?v=${youtubeId}`,
+      https://www.youtube.com/watch?v=${youtubeId},
       "-f", "best[ext=mp4]",
       "-g"
     ];
@@ -73,7 +73,7 @@ async function getDirectUrl(youtubeId) {
 app.get("/", (req, res) => {
   const protocol = req.get('x-forwarded-proto') || req.protocol;
   const host = req.get('host');
-  const baseUrl = `${protocol}://${host}`;
+  const baseUrl = ${protocol}://${host};
 
   res.send(`
     <!DOCTYPE html>
@@ -103,7 +103,7 @@ app.get("/", (req, res) => {
       <div>
         ${allVideos.slice(0, 6).map(video => `
           <div class="video-preview">
-            <img src="${video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`}" alt="${video.name || 'Video'}">
+            <img src="${video.poster || https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg}" alt="${video.name || 'Video'}">
             <div class="video-title">${video.name || 'Senza titolo'}</div>
           </div>
         `).join('')}
@@ -153,10 +153,10 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
       id: video.id,
       type: "channel",
       name: video.name || "Video senza titolo",
-      poster: video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+      poster: video.poster || https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg,
       description: video.description || "Nessuna descrizione",
       released: releasedDate,
-      runtime: `${Math.floor(runtimeInMinutes)} min`,
+      runtime: ${Math.floor(runtimeInMinutes)} min,
       genres: video.genres || ["Animation", "Kids"],
       behaviorHints: video.behaviorHints || {}
     };
@@ -168,7 +168,7 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/channel/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.id === videoId || `dk${v.id}` === videoId);
+  const video = allVideos.find(v => v.id === videoId || dk${v.id} === videoId);
 
   if (!video || !video.youtubeId) {
     return res.status(404).json({ streams: [] });
@@ -179,8 +179,8 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
   if (!directUrl) {
     return res.json({
       streams: [{
-        title: `${video.name || "Video"} (Apri su YouTube)`,
-        externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
+        title: ${video.name || "Video"} (Apri su YouTube),
+        externalUrl: https://www.youtube.com/watch?v=${video.youtubeId},
         behaviorHints: { notWebReady: true }
       }]
     });
@@ -201,7 +201,6 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
 // ===================== SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Dakids Addon running on port ${PORT}`);
-  console.log(`📺 Videos disponibili: ${allVideos.length}`);
-  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
-});
+  console.log(🚀 Dakids Addon running on port ${PORT});
+  console.log(📺 Videos disponibili: ${allVideos.length});
+  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`});
