@@ -2,7 +2,7 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import pkg from "yt-dlp-wrap";
+import pkg from "yt-dlp-wrap"; // Import compatibile con ESM
 const YTDlpWrap = pkg.default;
 
 const app = express();
@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // ===================== CONFIG YT-DLP =====================
+// Se esiste la variabile d'ambiente, salvo i cookie in un file temporaneo
 if (process.env.YTDLP_COOKIES) {
   fs.writeFileSync("/tmp/cookies.txt", process.env.YTDLP_COOKIES);
   console.log("🍪 Cookies salvati in /tmp/cookies.txt");
@@ -136,7 +137,6 @@ async function getDirectUrl(youtubeId) {
 
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
-  console.log("📥 Manifest richiesto");
   res.json({
     id: "com.dakids.Stremio",
     version: "3.0.0",
@@ -146,12 +146,13 @@ app.get("/manifest.json", (req, res) => {
     background: "https://i.imgur.com/gO6vKzB.png",
     resources: ["catalog", "stream"],
     types: ["movie"],
-    idPrefixes: ["dk"],
+    idPrefixes: ["dk_"],
     catalogs: [
       {
         type: "movie",
         id: "dakids",
-        name: "Cartoni per Bambini"
+        name: "Cartoni per Bambini",
+        extra: [{ name: "search", isRequired: false }]
       }
     ]
   });
@@ -159,56 +160,59 @@ app.get("/manifest.json", (req, res) => {
 
 // ===================== CATALOG =====================
 app.get("/catalog/movie/dakids.json", (req, res) => {
-  console.log("📥 Catalogo richiesto");
-  console.log("Video disponibili:", allVideos.length);
-
-  if (!allVideos.length) {
-    console.warn("⚠️ Nessun video trovato, invio esempio");
-    return res.json({
-      metas: [
-        {
-          id: "dk_test1",
-          type: "movie",
-          name: "Esempio Video",
-          poster: "https://i.imgur.com/K1264cT.png",
-          description: "Questo è un video di esempio",
-          runtime: "1 min",
-          genres: ["Animation", "Kids"]
-        }
-      ]
-    });
-  }
-
-  const metas = allVideos.map(video => ({
-    id: video.id.startsWith("dk") ? video.id : `dk${video.id}`,
-    type: "movie",
-    name: video.title,
-    poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-    description: video.title,
-    runtime: `${Math.floor(durationToMinutes(video.duration))} min`,
-    genres: ["Animation", "Kids"]
-  }));
-
+  const metas = allVideos.map(video => {
+    const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
+    return {
+      id: video.id,
+      type: "movie",
+      name: video.title,
+      poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+      description: video.title,
+      released: formatDate(video.date),
+      runtime: `${runtimeInMinutes} min`,
+      posterShape: "regular",
+      genres: ["Animation", "Kids"],
+      behaviorHints: { bingeGroup: video.youtubeId }
+    };
+  });
   res.json({ metas });
 });
 
 // ===================== STREAM =====================
 app.get("/stream/movie/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  console.log(`📥 Stream richiesto per ID: ${videoId}`);
-
   const video = allVideos.find(v => v.id === videoId);
+
   if (!video) {
     console.error(`❌ Video non trovato con ID: ${videoId}`);
     return res.status(404).json({ streams: [] });
   }
 
-  console.log(`🔍 Cerco URL diretto per: ${video.youtubeId} (${video.title})`);
   const directUrl = await getDirectUrl(video.youtubeId);
 
   if (!directUrl) {
-    console.warn(`⚠️ Nessun URL diretto trovato, uso fallback YouTube`);
     return res.json({
       streams: [{
         title: `${video.title} (Apri su YouTube)`,
-        externalUrl: `https://www.youtube.com/watch
+        externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
+        behaviorHints: { notWebReady: true }
+      }]
+    });
+  }
+
+  res.json({
+    streams: [{
+      title: video.title,
+      url: directUrl,
+      behaviorHints: { notWebReady: false, bingeGroup: video.youtubeId }
+    }]
+  });
+});
+
+// ===================== SERVER =====================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Dakids Addon running on port ${PORT}`);
+  console.log(`📺 Videos disponibili: ${allVideos.length}`);
+  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
+});
