@@ -9,30 +9,30 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// — Redirect HTTP → HTTPS dietro Render —
+// 1) HTTP → HTTPS dietro Render
 app.enable("trust proxy");
 app.use((req, res, next) => {
   if (req.get("x-forwarded-proto") === "http") {
-    const host = req.get("host");
-    return res.redirect(301, `https://${host}${req.originalUrl}`);
+    return res.redirect(301, `https://${req.get("host")}${req.originalUrl}`);
   }
   next();
 });
 
-// — Carica gli episodi da meta.json —
+// 2) Carica episodi
+const metaPath = path.resolve("./meta.json");
 let episodes = [];
 try {
-  episodes = JSON.parse(fs.readFileSync(path.resolve("./meta.json"), "utf-8"));
+  episodes = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
   console.log(`✅ Caricati ${episodes.length} episodi da meta.json`);
 } catch (err) {
   console.error("❌ Errore leggendo meta.json:", err.message);
 }
 
-// — Installation page su “/” —
+// 3) Root → pagina di installazione
 app.get("/", (req, res) => {
-  const baseUrl     = `${req.protocol}://${req.get("host")}`;
-  const manifestUrl = `${baseUrl}/manifest.json`;
-  const cardsHtml = episodes.map(ep => `
+  const base     = `${req.protocol}://${req.get("host")}`;
+  const manifest = `${base}/manifest.json`;
+  const cards = episodes.map(ep => `
     <div class="card">
       <img src="${ep.poster}" alt="${ep.title}">
       <div class="title">${ep.title}</div>
@@ -40,8 +40,8 @@ app.get("/", (req, res) => {
   `).join("");
 
   res.send(`
-    <!DOCTYPE html>
-    <html lang="it"><head><meta charset="UTF-8">
+  <!DOCTYPE html>
+  <html lang="it"><head><meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>Installa Dakids Addon</title>
     <style>
@@ -52,99 +52,125 @@ app.get("/", (req, res) => {
       .card img { width:100%; display:block; }
       .title { padding:0.5rem; font-size:0.9rem; }
       button { background:#4ecdc4; color:#fff; border:none; padding:0.8rem 1.5rem;
-               font-size:1rem; border-radius:25px; cursor:pointer; transition:background 0.2s; }
+               font-size:1rem; border-radius:25px; cursor:pointer; }
       button:hover { background:#3bb3a3; }
-      #manifest-url { margin-top:1rem; font-family:monospace; color:#555; word-break:break-all; }
+      #url { margin-top:1rem; font-family:monospace; color:#555; word-break:break-all; }
     </style>
-    </head><body>
-      <h1>🎉 Dakids Addon</h1>
-      <p>Clicca sui personaggi o copia il manifest:</p>
-      <div class="grid">${cardsHtml}</div>
-      <button id="copy-btn">📋 Copia Manifest</button>
-      <div id="manifest-url"></div>
-      <script>
-        const btn = document.getElementById("copy-btn");
-        const out = document.getElementById("manifest-url");
-        const url = "${manifestUrl}";
-        btn.addEventListener("click", () => {
-          navigator.clipboard.writeText(url)
-            .then(() => { btn.textContent="✅ Copiato!"; out.textContent="Manifest: "+url; })
-            .catch(() => { out.textContent="Errore copia manifest"; });
-        });
-      </script>
-    </body></html>
+  </head><body>
+    <h1>🎉 Dakids Addon</h1>
+    <p>Clicca sui personaggi o copia il manifest:</p>
+    <div class="grid">${cards}</div>
+    <button id="btn">📋 Copia Manifest</button>
+    <div id="url"></div>
+    <script>
+      const btn = document.getElementById("btn"), out = document.getElementById("url");
+      btn.onclick = () => {
+        navigator.clipboard.writeText("${manifest}")
+          .then(_=> { btn.textContent="✅ Copiato!"; out.textContent="Manifest: ${manifest}"; })
+          .catch(_=> out.textContent="Errore copia manifest");
+      };
+    </script>
+  </body></html>
   `);
 });
 
-// — Manifest route —
+// 4) Manifest route
 app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
     version: "1.0.0",
     name: "Dakids – Pocoyo 🇮🇹",
-    description: "Canale YouTube Pocoyo in italiano",
-    types: ["channel"],
+    description: "Episodi Pocoyo in italiano da YouTube",
+    types: ["movie"],
     idPrefixes: ["dk"],
     resources: ["catalog","meta","stream"],
     catalogs: [
-      { type: "channel", id: "pocoyo", name: "Pocoyo 🇮🇹", extra: [] }
+      { type: "movie", id: "pocoyo", name: "Pocoyo 🇮🇹", extra: [] }
     ]
   });
 });
 
-// — Catalog route —
-app.get("/catalog/channel/pocoyo.json", (_req, res) => {
+// 5) Catalog route
+app.get("/catalog/movie/pocoyo.json", (_req, res) => {
   res.json({
-    metas: [
-      {
-        id: "dk-pocoyo",
-        type: "channel",
-        name: "Pocoyo 🇮🇹",
-        poster: episodes[0]?.poster || "",
-        description: "Episodi divertenti per bambini",
-        genres: ["Animation","Kids"]
-      }
-    ]
+    metas: episodes.map(ep => ({
+      id: `dk-${ep.youtubeId}`,
+      type: "movie",
+      name: ep.title,
+      poster: ep.poster,
+      description: ep.title,
+      genres: ["Animation","Kids"]
+    }))
   });
 });
 
-// — Meta route —
-app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
-  const ep = episodes[0] || {};
+// 6) Meta route
+app.get("/meta/movie/:id.json", (req, res) => {
+  const id = req.params.id;          // "dk-<youtubeId>"
+  const you = id.replace(/^dk-/, "");
+  const ep  = episodes.find(e => e.youtubeId === you);
+  if (!ep) return res.sendStatus(404);
+
   res.json({
     meta: {
-      id: "dk-pocoyo",
-      type: "channel",
-      name: "Pocoyo 🇮🇹",
-      poster: ep.poster || "",
-      description: ep.title || "",
-      background: ep.poster || "",
+      id,
+      type: "movie",
+      name: ep.title,
+      poster: ep.poster,
+      background: ep.poster,
+      description: ep.title,
       genres: ["Animation","Kids"]
     }
   });
 });
 
-// — Stream route: restituamo **solo iframe** per garantire playback in-app su Web e App —
-app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
-  const streams = episodes.map(ep => ({
-    title: ep.title,
-    iframe: `
-      <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
-        <iframe
-          width="100%" height="100%"
-          src="https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen>
-        </iframe>
-      </div>`.trim(),
-    behaviorHints: { notWebReady: false }
-  }));
+// 7) Stream route
+app.get("/stream/movie/:id.json", async (req, res) => {
+  const id = req.params.id.replace(/^dk-/, "");
+  const videoUrl = `https://www.youtube.com/watch?v=${id}`;
+  let direct = videoUrl;
 
-  console.log(`🔍 /stream restituisce ${streams.length} iframe`);
-  res.json({ streams });
+  try {
+    const info = await ytdl.getInfo(videoUrl);
+    // preferisci HLS
+    direct = ytdl.chooseFormat(info.formats, f =>
+      f.mimeType?.includes("mpegurl")
+    )?.url
+      // o altrimenti MP4 audio+video
+      || ytdl.chooseFormat(info.formats, f =>
+        f.container === "mp4" && f.hasVideo && f.hasAudio
+      )?.url
+      || direct;
+  } catch (e) {
+    console.warn("⚠️ ytdl-core errore:", e.message);
+  }
+
+  // iframe per Web
+  const embed = `
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
+      <iframe width="100%" height="100%"
+        src="https://www.youtube.com/embed/${id}?autoplay=1&rel=0"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media;
+               gyroscope; picture-in-picture; web-share"
+        allowfullscreen>
+      </iframe>
+    </div>`.trim();
+
+  res.json({
+    streams: [
+      {
+        title: episodes.find(e => e.youtubeId === id)?.title || "Video",
+        url: direct,              // App/TV/Desktop
+        iframe: embed,            // Web
+        behaviorHints: { notWebReady: false }
+      }
+    ]
+  });
 });
 
-// — Avvia il server —
+// 8) Avvia server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Dakids Addon attivo su port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`)
+);
