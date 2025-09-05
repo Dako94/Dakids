@@ -22,7 +22,7 @@ ytDlpWrap.execPromise(["--version"])
   .then(v => console.log("✅ yt-dlp versione rilevata:", v.trim()))
   .catch(err => {
     console.error("❌ yt-dlp non trovato o non eseguibile:", err);
-    console.error("Suggerimento: assicurati che 'pip install -U yt-dlp' sia nel Build Command di Render");
+    console.error("Assicurati che 'pip install -U yt-dlp' sia nel Build Command di Render");
   });
 
 // ===================== LETTURA META.JSON =====================
@@ -168,7 +168,7 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/channel/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.id === videoId);
+  const video = allVideos.find(v => v.id === videoId || `dk${v.id}` === videoId);
 
   if (!video || !video.youtubeId) {
     return res.status(404).json({ streams: [] });
@@ -203,5 +203,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Dakids Addon running on port ${PORT}`);
   console.log(`📺 Videos disponibili: ${allVideos.length}`);
-  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
-});
+  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json
