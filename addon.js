@@ -26,67 +26,38 @@ app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="it">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Dakids – Pocoyo 🇮🇹</title>
-      <style>
-        body {
-          font-family: 'Comic Sans MS', cursive, sans-serif;
-          background: linear-gradient(to bottom, #fffae3, #ffe4e1);
-          color: #333; text-align: center; padding: 2rem;
-        }
-        h1 { color: #ff6f61; font-size: 2.5rem; }
-        p { font-size: 1.2rem; }
-        button {
-          background: #4ecdc4; color: white; border: none;
-          padding: 15px 25px; font-size: 1.2rem;
-          border-radius: 30px; cursor: pointer; margin: 1rem 0;
-          box-shadow: 0 4px #3bb3a3;
-        }
-        button:hover { background: #45b3a3; }
-        .video-preview {
-          display: inline-block; margin: 1rem;
-          border: 3px solid #ffd700; border-radius: 15px;
-          overflow: hidden; width: 200px; background: white;
-        }
-        .video-preview img { width: 100%; display: block; }
-        .video-title {
-          padding: 0.5rem; background: #fffacd; font-size: 1rem;
-        }
-      </style>
-    </head>
-    <body>
-      <h1>🎉 Benvenuto su Dakids – Pocoyo 🇮🇹</h1>
-      <p>Episodi divertenti per bambini 👶📺</p>
-      <button onclick="copyManifest()">📜 Copia Manifest</button>
-      <p style="font-size:0.9rem; color:#555;">
-        Incolla in Stremio questo URL:<br>
-        <code>${baseUrl}/manifest.json</code>
-      </p>
-      <hr>
-      <h2>📺 Episodi disponibili</h2>
-      <div>
-        ${episodes.map(ep => `
-          <div class="video-preview">
-            <img src="${ep.poster}" alt="${ep.title}">
-            <div class="video-title">${ep.title}</div>
-          </div>
-        `).join("")}
-      </div>
-      <script>
-        function copyManifest() {
-          navigator.clipboard.writeText("${baseUrl}/manifest.json")
-            .then(() => alert("✅ Manifest copiato!"))
-            .catch(() => alert("❌ Errore copia manifest"));
-        }
-      </script>
-    </body>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Dakids – Pocoyo 🇮🇹</title>
+        <style>
+          body { font-family: sans-serif; background: #fffbe6; text-align: center; padding: 2rem; }
+          h1 { color: #ff6f61; } 
+          .video { display: inline-block; margin: 1rem; width: 200px; }
+          .video img { width: 100%; }
+        </style>
+      </head>
+      <body>
+        <h1>🎉 Dakids – Pocoyo 🇮🇹</h1>
+        <p>Clicca “Copy Manifest” per aggiungere il canale in Stremio</p>
+        <button onclick="navigator.clipboard.writeText('${baseUrl}/manifest.json')">
+          📋 Copy Manifest
+        </button>
+        <hr>
+        <div>
+          ${episodes.map(ep => `
+            <div class="video">
+              <img src="${ep.poster}" alt="${ep.title}">
+              <div>${ep.title}</div>
+            </div>
+          `).join("")}
+        </div>
+      </body>
     </html>
   `);
 });
 
-// — Manifest.json —
+// — Manifest Stremio —
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "com.dakids",
@@ -95,19 +66,14 @@ app.get("/manifest.json", (req, res) => {
     description: "Pocoyo 🇮🇹 – Episodi per bambini da YouTube",
     types: ["channel"],
     idPrefixes: ["dk"],
-    resources: ["catalog", "meta", "stream"],
+    resources: ["catalog","meta","stream"],
     catalogs: [
-      {
-        type: "channel",
-        id: "pocoyo",
-        name: "Pocoyo 🇮🇹",
-        extra: []
-      }
+      { type: "channel", id: "pocoyo", name: "Pocoyo 🇮🇹", extra: [] }
     ]
   });
 });
 
-// — Catalog (un solo canale) —
+// — Catalog: un solo canale —
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
     metas: [
@@ -117,7 +83,7 @@ app.get("/catalog/channel/pocoyo.json", (req, res) => {
         name: "Pocoyo 🇮🇹",
         poster: episodes[0]?.poster || "",
         description: "Episodi divertenti per bambini",
-        genres: ["Animation", "Kids"]
+        genres: ["Animation","Kids"]
       }
     ]
   });
@@ -133,32 +99,18 @@ app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
       poster: episodes[0]?.poster || "",
       description: "Episodi divertenti per bambini",
       background: episodes[0]?.poster || "",
-      genres: ["Animation", "Kids"]
+      genres: ["Animation","Kids"]
     }
   });
 });
 
-// — Stream: embed YouTube su tutte le piattaforme —
+// — Stream: usa externalUrl per YouTube —
 app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
-  const streams = episodes.map(ep => {
-    const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
-    return {
-      title: ep.title,
-      iframe: `
-        <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
-          <iframe
-            width="100%"
-            height="100%"
-            src="${embedUrl}"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen>
-          </iframe>
-        </div>`.trim(),
-      behaviorHints: { notWebReady: false }
-    };
-  });
-
+  const streams = episodes.map(ep => ({
+    title: ep.title,
+    externalUrl: `https://www.youtube.com/watch?v=${ep.youtubeId}`,
+    behaviorHints: { notWebReady: false }
+  }));
   res.json({ streams });
 });
 
