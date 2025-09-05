@@ -24,57 +24,16 @@ app.get("/", (req, res) => {
   const host = req.get('host');
   const baseUrl = `${protocol}://${host}`;
 
-  let htmlContent = `
-  <!DOCTYPE html>
-  <html lang="it">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dakids TV - Addon Stremio per Bambini</title>
-    <style>
-      body { font-family: Arial, sans-serif; background: #fffae3; color: #333; text-align: center; padding: 2rem; }
-      h1 { color: #ff6f61; }
-      a { text-decoration: none; color: #0077cc; }
-      a:hover { text-decoration: underline; }
-      .video { display: inline-block; margin: 1rem; border: 2px solid #ffd700; border-radius: 12px; overflow: hidden; width: 220px; }
-      .video img { width: 100%; display: block; height: 120px; object-fit: cover; }
-      .video-title { font-size: 0.9rem; padding: 0.5rem; background: #fffacd; }
-      .container { max-width: 1200px; margin: 0 auto; }
-      .btn { display: inline-block; padding: 10px 20px; background: #4ecdc4; color: white; border-radius: 25px; margin: 10px; text-decoration: none; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>🎬 Benvenuti su Dakids TV!</h1>
-      <p>Cartoni animati e video divertenti per bambini di tutte le età.</p>
-      <p>Status: ✅ Online | Videos disponibili: ${allVideos.length}</p>
-      
-      <div style="margin: 20px 0;">
-        <a href="${baseUrl}/manifest.json" class="btn" target="_blank">📜 Manifest Stremio</a>
-        <a href="${baseUrl}/health" class="btn" target="_blank">❤️ Health Check</a>
-        <a href="${baseUrl}/catalog/movie/dakids-catalog.json" class="btn" target="_blank">📦 Catalogo</a>
-      </div>
-      
-      <hr>
-      <h2>I nostri video più recenti</h2>
-      <div>`;
-
-  allVideos.slice(0, 12).forEach(video => {
-    const thumb = video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
-    htmlContent += `
-      <div class="video">
-        <img src="${thumb}" alt="${video.title}">
-        <div class="video-title">${video.title.substring(0, 40)}${video.title.length > 40 ? '...' : ''}</div>
-      </div>`;
-  });
-
-  htmlContent += `
-      </div>
-    </div>
-  </body>
-  </html>`;
-
-  res.send(htmlContent);
+  res.send(`
+    <h1>🎬 Dakids TV - FIXED VERSION</h1>
+    <p>Status: ✅ Online | Videos: ${allVideos.length}</p>
+    <h3>Test Links:</h3>
+    <ul>
+      <li><a href="${baseUrl}/manifest.json" target="_blank">📜 Manifest</a></li>
+      <li><a href="${baseUrl}/catalog/movie/dakids-catalog.json" target="_blank">📦 Catalog</a></li>
+      <li><a href="${baseUrl}/stream/movie/tt_84F0RO6o8M.json" target="_blank">🎬 Test Stream</a></li>
+    </ul>
+  `);
 });
 
 // ===================== HEALTH CHECK =====================
@@ -82,6 +41,7 @@ app.get("/health", (req, res) => {
   res.json({ 
     status: "OK", 
     videos: allVideos.length,
+    version: "FIXED_EXTERNAL_URL",
     timestamp: new Date().toISOString()
   });
 });
@@ -91,7 +51,7 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   console.log("📦 Catalog request received");
   
   const metas = allVideos.map(video => ({
-    id: video.id, // Deve essere "tt" + YouTube ID
+    id: video.id,
     type: "movie",
     name: video.title || "Untitled",
     poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
@@ -107,69 +67,81 @@ app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
   res.json({ metas });
 });
 
-// ===================== STREAM - VERSIONE CORRETTA =====================
+// ===================== STREAM - VERSIONE FORZATA EXTERNAL =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
-  console.log(`🎬 Stream request for: ${videoId}`);
+  console.log(`\n🎬 ===== STREAM REQUEST =====`);
+  console.log(`🔍 Requested: ${videoId}`);
   
-  // Estrai l'ID YouTube dall'ID Stremio (tt + YouTubeID)
-  const youtubeId = videoId.startsWith('tt') ? videoId.substring(2) : videoId;
+  // Estrai YouTube ID
+  const youtubeId = videoId.startsWith('tt_') 
+    ? videoId.substring(3) 
+    : videoId.startsWith('tt') 
+      ? videoId.substring(2) 
+      : videoId;
+      
+  console.log(`🔍 YouTube ID: ${youtubeId}`);
+  
+  // Trova video
   const video = allVideos.find(v => v.youtubeId === youtubeId || v.id === videoId);
   
   if (!video) {
-    console.log("❌ Video not found for:", youtubeId);
-    return res.status(404).json({ error: "Video not found" });
+    console.log(`❌ Video NOT FOUND`);
+    return res.status(404).json({ 
+      streams: [],
+      error: "Video not found"
+    });
   }
 
-  console.log(`✅ Found video: ${video.title}`);
+  console.log(`✅ Found: ${video.title}`);
   
-  // ✅ FORMATO CORRETTO - USA externalUrl PER APRIRE NEL BROWSER
-  res.json({
+  // RISPOSTA FORZATA CON EXTERNAL URL
+  const response = {
     streams: [{
-      title: `📺 ${video.title} - Apri in YouTube`,
+      title: `🌐 ${video.title} - YouTube`,
       externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
       behaviorHints: {
         notWebReady: true
       }
     }]
-  });
+  };
+  
+  console.log(`📤 Sending stream response:`, JSON.stringify(response, null, 2));
+  res.json(response);
 });
 
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
   console.log("📜 Manifest request received");
-  res.json({
-    id: "dakids.addon",
-    version: "1.0.0",
-    name: "Dakids TV",
-    description: "Cartoni animati per bambini - apre YouTube nel browser",
+  
+  const manifest = {
+    id: "dakids.addon.fixed",
+    version: "2.0.0",
+    name: "Dakids TV (Fixed)",
+    description: "Cartoni per bambini - apre YouTube nel browser",
     resources: ["catalog", "stream"],
     types: ["movie"],
-    catalogs: [
-      { 
-        type: "movie", 
-        id: "dakids-catalog", 
-        name: "Cartoni per Bambini"
-      }
-    ],
+    catalogs: [{
+      type: "movie",
+      id: "dakids-catalog",
+      name: "Cartoni per Bambini"
+    }],
     idPrefixes: ["tt"],
-    // Aggiungi metadati per YouTube
     background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
     logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
-  });
+  };
+  
+  console.log("📜 Sending manifest");
+  res.json(manifest);
 });
 
 // ===================== DEBUG ENDPOINT =====================
 app.get("/debug", (req, res) => {
   res.json({
+    version: "FIXED_EXTERNAL_URL",
     totalVideos: allVideos.length,
     sampleVideo: allVideos[0] || null,
-    videoIds: allVideos.slice(0, 3).map(v => ({
-      stremioId: v.id,
-      youtubeId: v.youtubeId,
-      title: v.title
-    })),
-    streamExample: allVideos[0] ? `/stream/movie/${allVideos[0].id}.json` : null
+    testStreamUrl: allVideos[0] ? `/stream/movie/${allVideos[0].id}.json` : null
   });
 });
 
@@ -177,17 +149,10 @@ app.get("/debug", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("====================================");
-  console.log("🚀 Dakids Addon Server Started");
+  console.log("🚀 Dakids FIXED Addon Started");
   console.log("====================================");
   console.log("📍 Port:", PORT);
   console.log("📺 Videos loaded:", allVideos.length);
-  
-  if (allVideos.length > 0) {
-    console.log("🔍 First video ID:", allVideos[0].id);
-    console.log("🔍 YouTube ID:", allVideos[0].youtubeId);
-    console.log("🔍 Stream test:", `http://localhost:${PORT}/stream/movie/${allVideos[0].id}.json`);
-  }
-  
-  console.log("🌐 Server ready - Videos will open in browser");
+  console.log("🔧 Version: EXTERNAL_URL_FIXED");
   console.log("====================================");
 });
