@@ -133,25 +133,12 @@ app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   });
 });
 
-// — Stream/channel/dk-pocoyo.json — usa url + iframe —
+// — Stream/channel/dk-pocoyo.json — usa ytId invece di iframe —
 app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
   const streams = episodes.map(ep => {
-    const watchUrl = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
-    const embed = `
-      <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
-        <iframe
-          width="100%" height="100%"
-          src="https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen>
-        </iframe>
-      </div>`.trim();
-
     return {
       title: ep.title,
-      url: watchUrl,
-      iframe: embed,
+      ytId: ep.youtubeId,   // 👈 campo corretto per player YouTube
       behaviorHints: { notWebReady: false }
     };
   });
