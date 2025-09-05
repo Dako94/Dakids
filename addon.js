@@ -2,7 +2,8 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import YTDlpWrap from "yt-dlp-wrap"; // ✅ Import corretto per ESM
+import pkg from "yt-dlp-wrap"; // ✅ Import compatibile con ESM
+const YTDlpWrap = pkg.default; // ✅ Estraggo la classe dalla default export
 
 const app = express();
 app.use(cors());
