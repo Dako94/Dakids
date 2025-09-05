@@ -2,23 +2,22 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import pkg from "yt-dlp-wrap"; // Import compatibile con ESM
+import pkg from "yt-dlp-wrap";
 const YTDlpWrap = pkg.default;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===================== CONFIG YT-DLP =====================
-// Se esiste la variabile d'ambiente, salvo i cookie in un file temporaneo
-if (process.env.YTDLP_COOKIES) {
-  fs.writeFileSync("/tmp/cookies.txt", process.env.YTDLP_COOKIES);
+// ===================== CONFIG YT-DLP + COOKIES =====================
+const cookiesEnv = process.env.YTDLP_COOKIES || process.env.YOUTUBE_COOKIES;
+if (cookiesEnv) {
+  fs.writeFileSync("/tmp/cookies.txt", cookiesEnv);
   console.log("🍪 Cookies salvati in /tmp/cookies.txt");
 }
 
 const ytDlpWrap = new YTDlpWrap("yt-dlp");
 
-// Test immediato per vedere se yt-dlp è disponibile
 ytDlpWrap.execPromise(["--version"])
   .then(v => console.log("✅ yt-dlp versione rilevata:", v.trim()))
   .catch(err => {
@@ -37,7 +36,7 @@ try {
   allVideos = [];
 }
 
-// ===================== HOME PAGE BIMBO-FRIENDLY =====================
+// ===================== HOME PAGE =====================
 app.get("/", (req, res) => {
   const protocol = req.get('x-forwarded-proto') || req.protocol;
   const host = req.get('host');
@@ -51,36 +50,19 @@ app.get("/", (req, res) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Dakids TV 🎈</title>
       <style>
-        body {
-          font-family: 'Comic Sans MS', cursive, sans-serif;
-          background: linear-gradient(to bottom, #fffae3, #ffe4e1);
-          color: #333;
-          text-align: center;
-          padding: 2rem;
-        }
+        body { font-family: 'Comic Sans MS', cursive, sans-serif; background: linear-gradient(to bottom, #fffae3, #ffe4e1); color: #333; text-align: center; padding: 2rem; }
         h1 { color: #ff6f61; font-size: 2.5rem; }
         p { font-size: 1.2rem; }
-        button {
-          background: #4ecdc4; color: white; border: none;
-          padding: 15px 25px; font-size: 1.2rem;
-          border-radius: 30px; cursor: pointer; margin-top: 1rem;
-          box-shadow: 0 4px #3bb3a3;
-        }
+        button { background: #4ecdc4; color: white; border: none; padding: 15px 25px; font-size: 1.2rem; border-radius: 30px; cursor: pointer; margin-top: 1rem; box-shadow: 0 4px #3bb3a3; }
         button:hover { background: #45b3a3; }
-        .video-preview {
-          display: inline-block; margin: 1rem;
-          border: 3px solid #ffd700; border-radius: 15px;
-          overflow: hidden; width: 200px; background: white;
-        }
+        .video-preview { display: inline-block; margin: 1rem; border: 3px solid #ffd700; border-radius: 15px; overflow: hidden; width: 200px; background: white; }
         .video-preview img { width: 100%; display: block; }
-        .video-title {
-          padding: 0.5rem; background: #fffacd; font-size: 1rem;
-        }
+        .video-title { padding: 0.5rem; background: #fffacd; font-size: 1rem; }
       </style>
     </head>
     <body>
       <h1>🎉 Benvenuto su Dakids TV! 🎨</h1>
-      <p>Cartoni animati e video divertenti per bambini 👶📺</p>
+      <p>Canali e video divertenti per bambini 👶📺</p>
       <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
       <p style="font-size:0.9rem; color:#555;">Poi incollalo in Stremio per aggiungere l'addon</p>
       <hr>
@@ -124,7 +106,7 @@ async function getDirectUrl(youtubeId) {
       "-f", "best[ext=mp4]",
       "-g"
     ];
-    if (process.env.YTDLP_COOKIES) {
+    if (cookiesEnv) {
       args.push("--cookies", "/tmp/cookies.txt");
     }
     const output = await ytDlpWrap.execPromise(args);
@@ -141,17 +123,17 @@ app.get("/manifest.json", (req, res) => {
     id: "com.dakids.Stremio",
     version: "3.0.0",
     name: "Dakids",
-    description: "Video per bambini - riproduzione diretta da YouTube",
+    description: "Canali per bambini - riproduzione diretta da YouTube",
     logo: "https://i.imgur.com/K1264cT.png",
     background: "https://i.imgur.com/gO6vKzB.png",
     resources: ["catalog", "stream"],
-    types: ["movie"],
-    idPrefixes: ["dk"],
+    types: ["channel"], // 👈 ora è channel
+    idPrefixes: ["dk"], // 👈 prefisso corretto
     catalogs: [
       {
-        type: "movie",
+        type: "channel", // 👈 ora è channel
         id: "dakids",
-        name: "Cartoni per Bambini",
+        name: "Canali per Bambini",
         extra: [{ name: "search", isRequired: false }]
       }
     ]
@@ -159,12 +141,15 @@ app.get("/manifest.json", (req, res) => {
 });
 
 // ===================== CATALOG =====================
-app.get("/catalog/movie/dakids.json", (req, res) => {
+app.get("/catalog/channel/dakids.json", (req, res) => {
+  console.log("📥 Catalogo richiesto");
+  console.log("Primi 5 ID:", allVideos.slice(0, 5).map(v => v.id));
+
   const metas = allVideos.map(video => {
     const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
     return {
-      id: video.id,
-      type: "movie",
+      id: video.id.startsWith("dk") ? video.id : `dk${video.id}`,
+      type: "channel", // 👈 ora è channel
       name: video.title,
       poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
       description: video.title,
@@ -179,10 +164,11 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
 });
 
 // ===================== STREAM =====================
-app.get("/stream/movie/:videoId.json", async (req, res) => {
+app.get("/stream/channel/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.id === videoId);
+  console.log(`📥 Stream richiesto per ID: ${videoId}`);
 
+  const video = allVideos.find(v => v.id === videoId);
   if (!video) {
     console.error(`❌ Video non trovato con ID: ${videoId}`);
     return res.status(404).json({ streams: [] });
