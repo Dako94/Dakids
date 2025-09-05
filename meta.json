@@ -1,50 +1,22 @@
 [
   {
-    "id": "dk_84F0RO6o8M",
-    "youtubeId": "_84F0RO6o8M",
-    "type": "channel",
-    "name": "🎉 La FESTA IN MASCHERA di Pocoyo!",
-    "poster": "https://i.ytimg.com/vi/_84F0RO6o8M/hqdefault.jpg",
-    "description": "Divertiti con i travestimenti di Pocoyo! | Pocoyo 🇮🇹 Italiano",
-    "released": "2025-09-01",
-    "runtime": "6 min",
-    "genres": ["Animation", "Kids"],
-    "behaviorHints": { "bingeGroup": "_84F0RO6o8M" }
-  },
-  {
-    "id": "dkMCYRCGxNyZk",
     "youtubeId": "MCYRCGxNyZk",
-    "type": "channel",
-    "name": "🎢 L’INCREDIBILE Montagna Russa di Pocoyo!",
-    "poster": "https://i.ytimg.com/vi/MCYRCGxNyZk/hqdefault.jpg",
-    "description": "Esplora il parco divertimenti! | Pocoyo 🇮🇹 Italiano",
-    "released": "2025-08-29",
-    "runtime": "64 min",
-    "genres": ["Animation", "Kids"],
-    "behaviorHints": { "bingeGroup": "MCYRCGxNyZk" }
+    "title": "🎢 Montagna Russa",
+    "poster": "https://i.ytimg.com/vi/MCYRCGxNyZk/hqdefault.jpg"
   },
   {
-    "id": "dkDKvC8Mfb6_8",
+    "youtubeId": "_84F0RO6o8M",
+    "title": "🎉 Festa in Maschera",
+    "poster": "https://i.ytimg.com/vi/_84F0RO6o8M/hqdefault.jpg"
+  },
+  {
     "youtubeId": "DKvC8Mfb6_8",
-    "type": "channel",
-    "name": "⏳ Pocoyo viaggia indietro nel TEMPO!",
-    "poster": "https://i.ytimg.com/vi/DKvC8Mfb6_8/hqdefault.jpg",
-    "description": "Pocoyo salva la giornata! | Pocoyo 🇮🇹 Italiano",
-    "released": "2025-08-25",
-    "runtime": "7 min",
-    "genres": ["Animation", "Kids"],
-    "behaviorHints": { "bingeGroup": "DKvC8Mfb6_8" }
+    "title": "⏳ Viaggio nel Tempo",
+    "poster": "https://i.ytimg.com/vi/DKvC8Mfb6_8/hqdefault.jpg"
   },
   {
-    "id": "dkLZWoYc0MR1Y",
     "youtubeId": "LZWoYc0MR1Y",
-    "type": "channel",
-    "name": "SUPER POCOYO!",
-    "poster": "https://i.ytimg.com/vi/LZWoYc0MR1Y/hqdefault.jpg",
-    "description": "Pocoyo e i suoi amici diventano SUPEREROI! | Pocoyo 🇮🇹 Italiano",
-    "released": "2025-08-22",
-    "runtime": "127 min",
-    "genres": ["Animation", "Kids"],
-    "behaviorHints": { "bingeGroup": "LZWoYc0MR1Y" }
+    "title": "🦸 Super Pocoyo",
+    "poster": "https://i.ytimg.com/vi/LZWoYc0MR1Y/hqdefault.jpg"
   }
 ]
