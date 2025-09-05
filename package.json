@@ -4,6 +4,9 @@
   "description": "Addon Stremio per video bambini con metadata",
   "main": "addon.js",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node addon.js"
   },
