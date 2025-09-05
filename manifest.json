@@ -5,7 +5,7 @@
   "description": "Video per bambini - Addon pronto all'uso con metadata completi",
   "logo": "https://tuo-dominio.it/media/icon.png",
   "background": "https://tuo-dominio.it/media/background.jpg",
-  "resources": ["catalog", "stream"],
+  "resources": ["catalog", "meta", "stream"],
   "types": ["channel"],
   "idPrefixes": ["dk"],
   "catalogs": [
