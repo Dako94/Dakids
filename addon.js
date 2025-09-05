@@ -19,6 +19,13 @@ try {
 }
 
 // ===================== FUNZIONI =====================
+function durationToMinutes(duration) {
+  const parts = duration.split(":").map(Number);
+  if (parts.length === 3) return parts[0]*60 + parts[1] + parts[2]/60;
+  if (parts.length === 2) return parts[0] + parts[1]/60;
+  return parseFloat(duration) || 0;
+}
+
 function formatDate(date) {
   return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 }
@@ -29,75 +36,83 @@ app.get("/", (req, res) => {
   const host = req.get('host');
   const baseUrl = `${protocol}://${host}`;
 
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Dakids TV Addon</title>
-      <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .status { background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        .links { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        .links a { display: inline-block; margin: 5px 10px; padding: 8px 16px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; }
-        .links a:hover { background: #0056b3; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>🎬 Dakids TV Addon</h1>
-        <p>YouTube videos for kids - Stremio Addon</p>
+  let htmlContent = `
+  <!DOCTYPE html>
+  <html lang="it">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dakids TV - Addon Stremio</title>
+    <style>
+      body { font-family: Arial, sans-serif; background: #fffae3; color: #333; text-align: center; padding: 2rem; }
+      h1 { color: #ff6f61; }
+      a, button { text-decoration: none; color: white; background: #4ecdc4; padding: 10px 20px; border-radius: 25px; margin: 5px; cursor: pointer; display: inline-block; }
+      a:hover, button:hover { background: #45b3a3; }
+      .video { display: inline-block; margin: 1rem; border: 2px solid #ffd700; border-radius: 12px; overflow: hidden; width: 220px; }
+      .video img { width: 100%; display: block; }
+      .video-title { font-size: 0.9rem; padding: 0.5rem; background: #fffacd; }
+      .container { max-width: 1200px; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🎬 Benvenuti su Dakids TV!</h1>
+      <p>Cartoni animati e video divertenti per bambini.</p>
+      <p>Status: ✅ Online | Videos disponibili: ${allVideos.length}</p>
+      
+      <div>
+        <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
+        <a href="${baseUrl}/health" target="_blank">❤️ Health Check</a>
+        <a href="${baseUrl}/catalog/movie/dakids.json" target="_blank">📦 Catalogo</a>
       </div>
       
-      <div class="status">
-        <strong>✅ Status:</strong> Online<br>
-        <strong>📺 Videos:</strong> ${allVideos.length} caricati<br>
-        <strong>🔧 Version:</strong> 4.1 con Meta Fix
-      </div>
+      <hr>
+      <h2>I nostri video più recenti</h2>
+      <div>`;
+  
+  allVideos.slice(0, 12).forEach(video => {
+    htmlContent += `
+      <div class="video">
+        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg'">
+        <div class="video-title">${video.title}</div>
+      </div>`;
+  });
 
-      <div class="links">
-        <h3>🔗 Addon Links:</h3>
-        <a href="${baseUrl}/manifest.json" target="_blank">📋 Manifest</a>
-        <a href="${baseUrl}/catalog/movie/dakids.json" target="_blank">📦 Catalog</a>
-        <a href="${baseUrl}/health" target="_blank">❤️ Health</a>
+  htmlContent += `
       </div>
-    </body>
-    </html>
-  `);
+    </div>
+
+    <script>
+      function copyManifest() {
+        navigator.clipboard.writeText("${baseUrl}/manifest.json")
+          .then(() => alert("✅ Manifest copiato negli appunti!"))
+          .catch(() => alert("❌ Impossibile copiare manifest"));
+      }
+    </script>
+  </body>
+  </html>
+  `;
+
+  res.send(htmlContent);
 });
 
-// ===================== HEALTH =====================
+// ===================== HEALTH CHECK =====================
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "healthy", 
-    version: "4.1.0",
-    videosLoaded: allVideos.length,
-    timestamp: new Date().toISOString(),
-    server: "Dakids TV Addon"
-  });
+  res.json({ status: "OK", videos: allVideos.length, server: "Dakids TV Addon" });
 });
 
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
   res.json({
-    id: "org.dakids.addon",
-    version: "4.1.0",
+    id: "dakids.addon",
+    version: "1.0.0",
     name: "Dakids TV",
-    description: "YouTube cartoons for kids - iframe embed",
-    logo: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg",
-    background: "https://i.ytimg.com/vi/jNQXAC9IVRw/maxresdefault.jpg",
-    resources: ["catalog", "meta", "stream"],
+    description: "Cartoni animati per bambini - iframe embed compatible",
+    resources: ["catalog", "stream"],
     types: ["movie"],
-    idPrefixes: ["tt"],
+    idPrefixes: ["dk"], // ✅ unico prefisso
     catalogs: [
-      {
-        type: "movie",
-        id: "dakids",
-        name: "🎬 Dakids Cartoons",
-        extra: [
-          { name: "genre", options: ["Animation", "Kids"], isRequired: false }
-        ]
-      }
+      { type: "movie", id: "dakids", name: "Cartoni per Bambini" }
     ]
   });
 });
@@ -105,82 +120,35 @@ app.get("/manifest.json", (req, res) => {
 // ===================== CATALOG =====================
 app.get("/catalog/movie/dakids.json", (req, res) => {
   const metas = allVideos.map((video, index) => {
-    const simpleId = `tt${index + 1}`;
+    const simpleId = `dk${index + 1}`;
     return {
       id: simpleId,
       type: "movie",
       name: video.title,
-      poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-      background: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/maxresdefault.jpg`,
+      poster: video.thumbnail,
       description: video.title,
-      releaseInfo: video.date ? formatDate(video.date) : "2024",
-      runtime: video.duration || "6 min",
+      released: formatDate(video.date),
+      runtime: durationToMinutes(video.duration),
       genres: ["Animation", "Kids"],
-      imdbRating: 7.5,
-      behaviorHints: { bingeGroup: `tt${video.youtubeId}` }
+      behaviorHints: { bingeGroup: `dk${video.youtubeId}` }
     };
   });
   res.json({ metas });
 });
 
-// ===================== META =====================
-app.get("/meta/:type/:id.json", (req, res) => {
-  const { id } = req.params;
-
-  if (!id.startsWith("tt")) {
-    return res.status(404).json({ meta: {} });
-  }
-
-  const videoIndex = parseInt(id.substring(2)) - 1;
-  const video = allVideos[videoIndex];
-
-  if (!video) {
-    return res.status(404).json({ meta: {} });
-  }
-
-  res.json({
-    meta: {
-      id,
-      type: "movie",
-      name: video.title,
-      poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-      background: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/maxresdefault.jpg`,
-      description: video.title,
-      releaseInfo: video.date ? formatDate(video.date) : "2024",
-      runtime: video.duration || "6 min",
-      genres: ["Animation", "Kids"],
-      imdbRating: "7.5",
-      behaviorHints: {
-        bingeGroup: `tt${video.youtubeId}`
-      }
-    }
-  });
-});
-
 // ===================== STREAM =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
-
-  if (!videoId.startsWith("tt")) {
-    return res.json({ streams: [] });
-  }
-
-  const videoIndex = parseInt(videoId.substring(2)) - 1;
+  const videoIndex = parseInt(videoId.replace("dk", "")) - 1;
   const video = allVideos[videoIndex];
 
-  if (!video) {
-    return res.json({ streams: [] });
-  }
+  if (!video) return res.status(404).json({ error: "Video not found" });
 
   res.json({
     streams: [{
-      title: `▶️ ${video.title}`,
-      url: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1&origin=https://web.stremio.com`,
-      behaviorHints: {
-        notWebReady: false,
-        bingeGroup: `tt${video.youtubeId}`,
-        countryWhitelist: ["IT", "US", "GB", "DE", "FR"]
-      }
+      title: video.title,
+      url: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`,
+      behaviorHints: { notWebReady: false, bingeGroup: `dk${video.youtubeId}` }
     }]
   });
 });
@@ -188,7 +156,7 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
 // ===================== SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("🚀 Dakids Addon avviato");
-  console.log(`📍 Porta: ${PORT}`);
-  console.log(`📺 Video caricati: ${allVideos.length}`);
+  console.log(`🚀 Dakids Addon running on port ${PORT}`);
+  console.log(`📺 Videos disponibili: ${allVideos.length}`);
+  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
 });
