@@ -28,7 +28,7 @@ try {
   console.error("❌ Errore meta.json:", err.message);
 }
 
-// — Converte cookies.txt da variabile d’ambiente —
+// — Converte cookies.txt da variabile —
 function parseCookiesTxt(raw) {
   const lines = raw.split("\n").filter(l => l && !l.startsWith("#"));
   return lines.map(line => {
@@ -49,53 +49,104 @@ let cookies = [];
 try {
   const rawCookiesTxt = process.env.YOUTUBE_COOKIES;
   cookies = parseCookiesTxt(rawCookiesTxt);
-  console.log(`🔐 Cookie YouTube caricati da variabile`);
+  console.log(`🔐 Cookie YouTube caricati`);
 } catch (err) {
   console.error("❌ Errore parsing cookie:", err.message);
 }
 
+// — Pagina HTML con personaggi —
+app.get("/", (req, res) => {
+  const base = `${req.protocol}://${req.get("host")}`;
+  const manifest = `${base}/manifest.json`;
+  const cardsHtml = episodes.map(ep => `
+    <div class="card">
+      <img src="${ep.poster}" alt="${ep.title}">
+      <div class="title">${ep.title}</div>
+    </div>
+  `).join("");
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1.0">
+      <title>Dakids Addon</title>
+      <style>
+        body { font-family:sans-serif; background:#f0f8ff; text-align:center; padding:2rem; }
+        .grid { display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; margin:2rem 0; }
+        .card { width:150px; border:2px solid #ddd; border-radius:8px; overflow:hidden;
+                background:#fff; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+        .card img { width:100%; display:block; }
+        .title { padding:0.5rem; font-size:0.9rem; }
+        button { background:#4ecdc4; color:#fff; border:none; padding:0.8rem 1.5rem;
+                 font-size:1rem; border-radius:25px; cursor:pointer; }
+        button:hover { background:#3bb3a3; }
+        #manifest-url { margin-top:1rem; font-family:monospace; color:#555; word-break:break-all; }
+      </style>
+    </head>
+    <body>
+      <h1>🎉 Dakids Addon</h1>
+      <p>Clicca sui personaggi o copia il manifest:</p>
+      <div class="grid">${cardsHtml}</div>
+      <button id="copy-btn">📋 Copia Manifest</button>
+      <div id="manifest-url"></div>
+      <script>
+        const btn = document.getElementById("copy-btn");
+        const out = document.getElementById("manifest-url");
+        btn.addEventListener("click", () => {
+          navigator.clipboard.writeText("${manifest}")
+            .then(() => {
+              btn.textContent = "✅ Copiato!";
+              out.textContent = "Manifest: ${manifest}";
+            })
+            .catch(() => {
+              out.textContent = "Errore copia manifest.";
+            });
+        });
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 // — Manifest —
 app.get("/manifest.json", (_req, res) => {
-  const base = "https://dakids.onrender.com";
   res.json({
     id: "com.dakids",
     version: "1.0.0",
-    name: "Dakids – Pocoyo 🇮🇹",
-    description: "Canale YouTube Pocoyo in italiano",
+    name: "Dakids – Cartoni 🇮🇹",
+    description: "Personaggi: Pocoyo, Bluey, Peppa Pig, Cocomelon",
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
     catalogs: [
-      { type: "channel", id: "pocoyo", name: "Pocoyo 🇮🇹", extra: [] }
+      { type: "channel", id: "dakids", name: "Dakids 🇮🇹", extra: [] }
     ]
   });
 });
 
 // — Catalog —
-app.get("/catalog/channel/pocoyo.json", (_req, res) => {
-  const poster = episodes[0]?.poster || "";
-  res.json({
-    metas: [
-      {
-        id: "dk-pocoyo",
-        type: "channel",
-        name: "Pocoyo 🇮🇹",
-        poster,
-        description: "Episodi divertenti per bambini",
-        genres: ["Animation", "Kids"]
-      }
-    ]
-  });
+app.get("/catalog/channel/dakids.json", (_req, res) => {
+  const metas = episodes.map(ep => ({
+    id: `dk-${ep.youtubeId}`,
+    type: "channel",
+    name: ep.title,
+    poster: ep.poster,
+    description: "Episodio per bambini",
+    genres: ["Animation", "Kids"]
+  }));
+  res.json({ metas });
 });
 
 // — Meta —
-app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
-  const ep = episodes[0] || {};
+app.get("/meta/channel/:id.json", (req, res) => {
+  const ep = episodes.find(e => `dk-${e.youtubeId}` === req.params.id) || {};
   res.json({
     meta: {
-      id: "dk-pocoyo",
+      id: `dk-${ep.youtubeId}`,
       type: "channel",
-      name: "Pocoyo 🇮🇹",
+      name: ep.title || "Dakids",
       poster: ep.poster || "",
       description: ep.title || "",
       background: ep.poster || "",
@@ -105,39 +156,38 @@ app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
 });
 
 // — Stream —
-app.get("/stream/channel/dk-pocoyo.json", async (_req, res) => {
-  const streams = [];
+app.get("/stream/channel/:id.json", async (req, res) => {
+  const ep = episodes.find(e => `dk-${e.youtubeId}` === req.params.id);
+  if (!ep) return res.json({ streams: [] });
 
-  for (const ep of episodes) {
-    try {
-      const browser = await puppeteer.launch({ headless: "new" });
-      const page = await browser.newPage();
-      await page.setCookie(...cookies);
-      await page.goto(`https://www.youtube.com/watch?v=${ep.youtubeId}`, { waitUntil: "networkidle2" });
+  try {
+    const browser = await puppeteer.launch({ headless: "new" });
+    const page = await browser.newPage();
+    await page.setCookie(...cookies);
+    await page.goto(`https://www.youtube.com/watch?v=${ep.youtubeId}`, { waitUntil: "networkidle2" });
 
-      const embedUrl = await page.evaluate(() => {
-        const iframe = document.querySelector("iframe");
-        return iframe ? iframe.src : null;
-      });
+    const embedUrl = await page.evaluate(() => {
+      const iframe = document.querySelector("iframe");
+      return iframe ? iframe.src : null;
+    });
 
-      await browser.close();
+    await browser.close();
 
-      if (embedUrl) {
-        streams.push({
+    if (embedUrl) {
+      res.json({
+        streams: [{
           title: ep.title,
           url: embedUrl,
           behaviorHints: { notWebReady: false }
-        });
-      } else {
-        console.warn(`❌ Video non embeddabile: ${ep.title}`);
-      }
-    } catch (err) {
-      console.error(`⚠️ Errore stream ${ep.title}:`, err.message);
+        }]
+      });
+    } else {
+      res.json({ streams: [] });
     }
+  } catch (err) {
+    console.error(`⚠️ Errore stream ${ep.title}:`, err.message);
+    res.json({ streams: [] });
   }
-
-  console.log(`🔍 /stream restituisce ${streams.length} stream`);
-  res.json({ streams });
 });
 
 // — Avvia il server —
