@@ -7,7 +7,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ===================== LETTURA METADATA =====================
+// ===================== LETTURA META.JSON =====================
 let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
@@ -18,7 +18,19 @@ try {
   allVideos = [];
 }
 
-// ===================== ROOT ENDPOINT =====================
+// ===================== FUNZIONI =====================
+function durationToMinutes(duration) {
+  const parts = duration.split(":").map(Number);
+  if (parts.length === 3) return parts[0]*60 + parts[1] + parts[2]/60;
+  if (parts.length === 2) return parts[0] + parts[1]/60;
+  return parseFloat(duration) || 0;
+}
+
+function formatDate(date) {
+  return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
+}
+
+// ===================== HOMEPAGE =====================
 app.get("/", (req, res) => {
   const protocol = req.get('x-forwarded-proto') || req.protocol;
   const host = req.get('host');
@@ -30,27 +42,27 @@ app.get("/", (req, res) => {
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dakids TV - Addon Stremio per Bambini</title>
+    <title>Dakids TV - Addon Stremio</title>
     <style>
       body { font-family: Arial, sans-serif; background: #fffae3; color: #333; text-align: center; padding: 2rem; }
       h1 { color: #ff6f61; }
       a { text-decoration: none; color: #0077cc; }
       a:hover { text-decoration: underline; }
       .video { display: inline-block; margin: 1rem; border: 2px solid #ffd700; border-radius: 12px; overflow: hidden; width: 220px; }
-      .video img { width: 100%; display: block; height: 120px; object-fit: cover; }
+      .video img { width: 100%; display: block; }
       .video-title { font-size: 0.9rem; padding: 0.5rem; background: #fffacd; }
       .container { max-width: 1200px; margin: 0 auto; }
-      .btn { display: inline-block; padding: 10px 20px; background: #4ecdc4; color: white; border-radius: 25px; margin: 10px; text-decoration: none; }
+      .btn { display: inline-block; padding: 10px 20px; background: #4ecdc4; color: white; border-radius: 25px; margin: 10px; text-decoration: none; cursor: pointer; }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>🎬 Benvenuti su Dakids TV!</h1>
-      <p>Cartoni animati e video divertenti per bambini di tutte le età.</p>
+      <p>Cartoni animati e video divertenti per bambini.</p>
       <p>Status: ✅ Online | Videos disponibili: ${allVideos.length}</p>
       
       <div style="margin: 20px 0;">
-        <a href="${baseUrl}/manifest.json" class="btn" target="_blank">📜 Manifest Stremio</a>
+        <button class="btn" onclick="copyManifest()">📜 Copia Manifest Stremio</button>
         <a href="${baseUrl}/health" class="btn" target="_blank">❤️ Health Check</a>
         <a href="${baseUrl}/catalog/movie/dakids-catalog.json" class="btn" target="_blank">📦 Catalogo</a>
       </div>
@@ -60,136 +72,93 @@ app.get("/", (req, res) => {
       <div>`;
 
   allVideos.slice(0, 12).forEach(video => {
-    const thumb = video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`;
     htmlContent += `
       <div class="video">
-        <img src="${thumb}" alt="${video.title}">
-        <div class="video-title">${video.title.substring(0, 40)}${video.title.length > 40 ? '...' : ''}</div>
+        <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg'">
+        <div class="video-title">${video.title}</div>
       </div>`;
   });
 
   htmlContent += `
       </div>
+      
+      <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+        <h3>📋 Come installare su Stremio</h3>
+        <p>1. Apri Stremio</p>
+        <p>2. Vai su Addons → Installa da URL</p>
+        <p>3. Incolla il link copiato cliccando il pulsante sopra</p>
+      </div>
     </div>
+
+    <script>
+      function copyManifest() {
+        const manifestURL = "${baseUrl}/manifest.json";
+        navigator.clipboard.writeText(manifestURL)
+          .then(() => alert("✅ Manifest copiato negli appunti!"))
+          .catch(() => alert("❌ Impossibile copiare manifest"));
+      }
+    </script>
   </body>
-  </html>`;
+  </html>
+  `;
 
   res.send(htmlContent);
 });
 
 // ===================== HEALTH CHECK =====================
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
-    videos: allVideos.length,
-    timestamp: new Date().toISOString()
-  });
+  res.json({ status: "OK", videos: allVideos.length, server: "Dakids TV Addon" });
 });
 
-// ===================== CATALOGO =====================
+// ===================== CATALOG =====================
 app.get("/catalog/movie/dakids-catalog.json", (req, res) => {
-  console.log("📦 Catalog request received");
-  
   const metas = allVideos.map(video => ({
-    id: video.id, // Deve essere "tt" + YouTube ID
+    id: video.id,
     type: "movie",
-    name: video.title || "Untitled",
-    poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-    background: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-    description: video.title || "Video for kids",
-    runtime: video.duration ? parseInt(video.duration.split(':')[0]) * 60 + parseInt(video.duration.split(':')[1]) || 0 : 0,
-    released: video.date ? video.date.substring(0, 4) : "2024",
+    name: video.title,
+    poster: video.thumbnail,
+    description: video.title,
+    runtime: durationToMinutes(video.duration),
+    released: formatDate(video.date),
     genres: ["Animation", "Kids"],
     imdbRating: "7.5"
   }));
-  
-  console.log(`📦 Sending ${metas.length} videos to Stremio`);
   res.json({ metas });
 });
 
-// ===================== STREAM - VERSIONE CORRETTA =====================
+// ===================== STREAM =====================
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
-  console.log(`🎬 Stream request for: ${videoId}`);
-  
-  // Estrai l'ID YouTube dall'ID Stremio (tt + YouTubeID)
-  const youtubeId = videoId.startsWith('tt') ? videoId.substring(2) : videoId;
-  const video = allVideos.find(v => v.youtubeId === youtubeId || v.id === videoId);
-  
-  if (!video) {
-    console.log("❌ Video not found for:", youtubeId);
-    return res.status(404).json({ error: "Video not found" });
-  }
+  const video = allVideos.find(v => v.id === videoId);
+  if (!video) return res.status(404).json({ error: "Video not found" });
 
-  console.log(`✅ Found video: ${video.title}`);
-  
-  // ✅ FORMATO CORRETTO - IL VIDEO SI APRIRÀ NEL BROWSER
   res.json({
     streams: [{
-      title: `📺 ${video.title}`,
-      // ✅ externalUrl farà aprire YouTube nel browser
-      externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
-      behaviorHints: {
-        // ✅ Indica che il contenuto si apre esternamente
-        notWebReady: true
-      }
+      title: video.title,
+      url: `https://www.youtube.com/watch?v=${video.youtubeId}`,
+      behaviorHints: { notWebReady: false }
     }]
   });
 });
 
 // ===================== MANIFEST =====================
 app.get("/manifest.json", (req, res) => {
-  console.log("📜 Manifest request received");
   res.json({
     id: "dakids.addon",
     version: "1.0.0",
     name: "Dakids TV",
-    description: "Cartoni animati per bambini - apre YouTube nel browser",
+    description: "Cartoni animati per bambini",
     resources: ["catalog", "stream"],
     types: ["movie"],
-    catalogs: [
-      { 
-        type: "movie", 
-        id: "dakids-catalog", 
-        name: "Cartoni per Bambini"
-      }
-    ],
-    idPrefixes: ["tt"],
-    // Aggiungi metadati per YouTube
-    background: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg",
-    logo: "https://i.ytimg.com/vi/6V0TR2BMN64/maxresdefault.jpg"
+    catalogs: [{ type: "movie", id: "dakids-catalog", name: "Cartoni per Bambini" }],
+    idPrefixes: ["tt"]
   });
 });
 
-// ===================== DEBUG ENDPOINT =====================
-app.get("/debug", (req, res) => {
-  res.json({
-    totalVideos: allVideos.length,
-    sampleVideo: allVideos[0] || null,
-    videoIds: allVideos.slice(0, 3).map(v => ({
-      stremioId: v.id,
-      youtubeId: v.youtubeId,
-      title: v.title
-    })),
-    streamExample: allVideos[0] ? `/stream/movie/${allVideos[0].id}.json` : null
-  });
-});
-
-// ===================== AVVIO SERVER =====================
+// ===================== SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log("====================================");
-  console.log("🚀 Dakids Addon Server Started");
-  console.log("====================================");
-  console.log("📍 Port:", PORT);
-  console.log("📺 Videos loaded:", allVideos.length);
-  
-  if (allVideos.length > 0) {
-    console.log("🔍 First video ID:", allVideos[0].id);
-    console.log("🔍 YouTube ID:", allVideos[0].youtubeId);
-    console.log("🔍 Stream test:", `http://localhost:${PORT}/stream/movie/${allVideos[0].id}.json`);
-  }
-  
-  console.log("🌐 Server ready - Videos will open in browser");
-  console.log("====================================");
+  console.log(`🚀 Dakids Addon running on port ${PORT}`);
+  console.log(`📺 Videos disponibili: ${allVideos.length}`);
+  console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
 });
