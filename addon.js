@@ -11,26 +11,32 @@ app.use(express.json());
 // —– Carica episodi da meta.json —–
 let episodes = [];
 try {
-  episodes = JSON.parse(fs.readFileSync("./meta.json", "utf-8"));
+  const raw = fs.readFileSync("./meta.json", "utf-8");
+  episodes = JSON.parse(raw);
   console.log(`✅ Caricati ${episodes.length} episodi`);
 } catch (err) {
   console.error("❌ Errore leggendo meta.json:", err);
   episodes = [];
 }
 
-// —– Ottieni URL diretto con ytdl-core —–
+// —– Funzione per ottenere URL diretto o fallback —–
 async function getDirectUrl(youtubeId) {
   try {
-    const info = await ytdl.getInfo(youtubeId);
-    const format = ytdl.chooseFormat(info.formats, {
+    const info = await ytdl.getInfo(`https://www.youtube.com/watch?v=${youtubeId}`, {
+      requestOptions: {
+        headers: { Cookie: process.env.YOUTUBE_COOKIES || "" }
+      }
+    });
+    const fmt = ytdl.chooseFormat(info.formats, {
       filter: f => f.container === "mp4" && f.hasVideo && f.hasAudio,
       quality: "highest"
     });
-    console.log("✅ ytdl-core URL:", format.url);
-    return format.url;
-  } catch (err) {
-    console.error("❌ ytdl-core error:", err);
-    return null;
+    console.log(`[OK] ${youtubeId} → MP4 URL ottenuto`);
+    return fmt.url;
+  } catch (e) {
+    console.warn(`[FALLBACK] ${youtubeId} → uso link YouTube (${e.statusCode || e.message})`);
+    // Forza in-app YouTube player
+    return `https://www.youtube.com/watch?v=${youtubeId}`;
   }
 }
 
@@ -39,6 +45,7 @@ app.get("/", (req, res) => {
   const proto = req.get("x-forwarded-proto") || req.protocol;
   const host  = req.get("host");
   const baseUrl = `${proto}://${host}`;
+
   res.send(`
     <!DOCTYPE html>
     <html lang="it">
@@ -156,21 +163,16 @@ app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
 
 // —– Stream: tutti gli episodi —–
 app.get("/stream/channel/dk-pocoyo.json", async (req, res) => {
-  const streams = await Promise.all(episodes.map(async ep => {
-    const url = await getDirectUrl(ep.youtubeId);
-    if (!url) {
+  const streams = await Promise.all(
+    episodes.map(async ep => {
+      const url = await getDirectUrl(ep.youtubeId);
       return {
-        title: `${ep.title} (Apri su YouTube)`,
-        externalUrl: `https://www.youtube.com/watch?v=${ep.youtubeId}`,
-        behaviorHints: { notWebReady: true }
+        title: ep.title,
+        url,
+        behaviorHints: { notWebReady: false }
       };
-    }
-    return {
-      title: ep.title,
-      url,
-      behaviorHints: { notWebReady: false }
-    };
-  }));
+    })
+  );
   res.json({ streams });
 });
 
