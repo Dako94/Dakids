@@ -91,7 +91,7 @@ app.get("/manifest.json", (req, res) => {
     description: "YouTube cartoons for kids - iframe embed compatible",
     logo: "https://i.ytimg.com/vi/jNQXAC9IVRw/maxresdefault.jpg",
     background: "https://i.ytimg.com/vi/jNQXAC9IVRw/maxresdefault.jpg",
-    resources: ["catalog", "stream"],
+    resources: ["catalog", "meta", "stream"],
     types: ["movie"],
     idPrefixes: ["dk"],
     catalogs: [
