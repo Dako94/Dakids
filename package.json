@@ -1,7 +1,7 @@
 {
   "name": "dakids-addon",
   "version": "1.0.0",
-  "description": "Addon Stremio – canale Pocoyo italiano",
+  "description": "Addon Stremio ita",
   "main": "addon.js",
   "type": "module",
   "scripts": {
