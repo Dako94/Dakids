@@ -13,15 +13,15 @@ app.use(express.json());
 const cookiesEnv = process.env.YTDLP_COOKIES || process.env.YOUTUBE_COOKIES;
 if (cookiesEnv) {
   fs.writeFileSync("/tmp/cookies.txt", cookiesEnv);
-  console.log("Cookies salvati in /tmp/cookies.txt");
+  console.log("✅ Cookies salvati in /tmp/cookies.txt");
 }
 
 const ytDlpWrap = new YTDlpWrap("yt-dlp");
 
 ytDlpWrap.execPromise(["--version"])
-  .then(v => console.log(`yt-dlp versione rilevata: ${v.trim()}`))
+  .then(v => console.log(`✅ yt-dlp versione: ${v.trim()}`))
   .catch(err => {
-    console.error("yt-dlp non trovato o non eseguibile:", err);
+    console.error("❌ yt-dlp non trovato:", err);
     console.error("Assicurati che 'pip install -U yt-dlp' sia nel Build Command di Render");
   });
 
@@ -30,27 +30,13 @@ let allVideos = [];
 try {
   const data = fs.readFileSync("./meta.json", "utf-8");
   allVideos = JSON.parse(data);
-  console.log(`Caricati ${allVideos.length} video`);
+  console.log(`📦 Caricati ${allVideos.length} video`);
 } catch (err) {
-  console.error("Errore nella lettura di meta.json:", err);
+  console.error("❌ Errore meta.json:", err);
   allVideos = [];
 }
 
 // ===================== FUNZIONI =====================
-function durationToMinutes(duration) {
-  if (!duration || typeof duration !== "string") return 0;
-  const parts = duration.split(":").map(Number);
-  if (parts.length === 3) return parts[0] * 60 + parts[1] + parts[2] / 60;
-  if (parts.length === 2) return parts[0] + parts[1] / 60;
-  if (parts.length === 1) return parts[0];
-  return 0;
-}
-
-function formatDate(date) {
-  if (!date || typeof date !== "string") return undefined;
-  return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
-}
-
 async function getDirectUrl(youtubeId) {
   try {
     const args = [
@@ -61,10 +47,13 @@ async function getDirectUrl(youtubeId) {
     if (cookiesEnv) {
       args.push("--cookies", "/tmp/cookies.txt");
     }
+
+    console.log(`▶ yt-dlp args: ${args.join(" ")}`);
     const output = await ytDlpWrap.execPromise(args);
+    console.log(`✅ yt-dlp output: ${output.trim()}`);
     return output.trim();
   } catch (err) {
-    console.error("Errore yt-dlp durante estrazione URL:", err);
+    console.error("❌ yt-dlp error:", err);
     return null;
   }
 }
@@ -145,22 +134,17 @@ app.get("/manifest.json", (req, res) => {
 
 // ===================== CATALOG =====================
 app.get("/catalog/channel/dakids.json", (req, res) => {
-  const metas = allVideos.map(video => {
-    const runtimeInMinutes = durationToMinutes(video.runtime);
-    const releasedDate = formatDate(video.released);
-
-    return {
-      id: video.id,
-      type: "channel",
-      name: video.name || "Video senza titolo",
-      poster: video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
-      description: video.description || "Nessuna descrizione",
-      released: releasedDate,
-      runtime: `${Math.floor(runtimeInMinutes)} min`,
-      genres: video.genres || ["Animation", "Kids"],
-      behaviorHints: video.behaviorHints || {}
-    };
-  });
+  const metas = allVideos.map(video => ({
+    id: video.id || `dk${video.youtubeId}`,
+    type: "channel",
+    name: video.name || "Video senza titolo",
+    poster: video.poster || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
+    description: video.description || "Nessuna descrizione",
+    released: video.released || "2025-01-01",
+    runtime: video.runtime || "5 min",
+    genres: video.genres || ["Animation", "Kids"],
+    behaviorHints: video.behaviorHints || {}
+  }));
 
   res.json({ metas });
 });
@@ -171,12 +155,14 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
   const video = allVideos.find(v => v.id === videoId || `dk${v.id}` === videoId);
 
   if (!video || !video.youtubeId) {
+    console.log(`⚠️ Video non trovato per ID: ${videoId}`);
     return res.status(404).json({ streams: [] });
   }
 
   const directUrl = await getDirectUrl(video.youtubeId);
 
   if (!directUrl) {
+    console.log(`⚠️ Nessun URL diretto per ${video.youtubeId}, uso fallback YouTube`);
     return res.json({
       streams: [{
         title: `${video.name || "Video"} (Apri su YouTube)`,
@@ -201,7 +187,7 @@ app.get("/stream/channel/:videoId.json", async (req, res) => {
 // ===================== SERVER =====================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Dakids Addon running on port ${PORT}`);
-  console.log(`📺 Videos disponibili: ${allVideos.length}`);
+  console.log(`🚀 Dakids Addon attivo sulla porta ${PORT}`);
+  console.log(`📺 Video disponibili: ${allVideos.length}`);
   console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
 });
