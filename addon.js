@@ -204,3 +204,4 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Dakids Addon running on port ${PORT}`);
   console.log(`📺 Videos disponibili: ${allVideos.length}`);
   console.log(`🌐 Manifest: http://localhost:${PORT}/manifest.json`);
+}
