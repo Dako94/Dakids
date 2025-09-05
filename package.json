@@ -5,7 +5,7 @@
   "main": "addon.js",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=18"
   },
   "scripts": {
     "start": "node addon.js"
