@@ -2,23 +2,31 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
+import path from "path";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Carica la lista di episodi da meta.json (assicurati che meta.json sia in root)
+// — Carica la lista di episodi da meta.json —
 let episodes = [];
 try {
-  const raw = fs.readFileSync("./meta.json", "utf-8");
+  const raw = fs.readFileSync(path.resolve("./meta.json"), "utf-8");
   episodes = JSON.parse(raw);
   console.log(`✅ Caricati ${episodes.length} episodi da meta.json`);
 } catch (err) {
-  console.error("❌ Errore leggendo meta.json:", err.message);
+  console.error("❌ Impossibile leggere meta.json:", err.message);
+  episodes = [];
 }
 
-// 1) Manifest
+// — Root → redirect a manifest.json —
+app.get("/", (req, res) => {
+  res.redirect("/manifest.json");
+});
+
+// — 1) Manifest.json —
 app.get("/manifest.json", (req, res) => {
+  console.log("📄 /manifest.json richiesto");
   res.json({
     id: "com.dakids",
     version: "1.0.0",
@@ -33,8 +41,9 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-// 2) Catalog (un solo canale)
+// — 2) Catalog: un solo canale —
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
+  console.log("📚 /catalog/channel/pocoyo.json richiesto");
   res.json({
     metas: [
       {
@@ -49,23 +58,26 @@ app.get("/catalog/channel/pocoyo.json", (req, res) => {
   });
 });
 
-// 3) Meta del canale
+// — 3) Meta del canale —
 app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
+  console.log("📋 /meta/channel/dk-pocoyo.json richiesto");
+  const ep = episodes[0] || {};
   res.json({
     meta: {
       id: "dk-pocoyo",
       type: "channel",
-      name: "Pocoyo 🇮🇹",
-      poster: episodes[0]?.poster || "",
-      description: "Episodi divertenti per bambini",
-      background: episodes[0]?.poster || "",
+      name: ep.title || "Pocoyo 🇮🇹",
+      poster: ep.poster || "",
+      description: ep.title || "Episodi divertenti per bambini",
+      background: ep.poster || "",
       genres: ["Animation", "Kids"]
     }
   });
 });
 
-// 4) Stream: un iframe YouTube per ogni episodio
+// — 4) Stream: iframe universale YouTube —
 app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
+  console.log("🎬 /stream/channel/dk-pocoyo.json richiesto");
   const streams = episodes.map(ep => {
     const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
     return {
@@ -89,7 +101,7 @@ app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
   res.json({ streams });
 });
 
-// Avvia il server
+// — Avvia il server —
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`);
