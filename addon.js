@@ -1,3 +1,15 @@
+// — Trust proxy per leggere x-forwarded-proto dietro Render —
+app.enable("trust proxy");
+
+// — Redirect automatico HTTP → HTTPS —
+app.use((req, res, next) => {
+  if (req.get("x-forwarded-proto") === "http") {
+    const host = req.get("host");
+    const url  = `https://${host}${req.originalUrl}`;
+    return res.redirect(301, url);
+  }
+  next();
+});
 #!/usr/bin/env node
 import express from "express";
 import cors from "cors";
