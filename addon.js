@@ -7,19 +7,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// — Carica episodi da meta.json —
-// meta.json deve contenere un array di oggetti:
-// { "youtubeId": "MCYRCGxNyZk", "title": "Titolo episodio", "poster": "https://..." }
-let episodes;
+// Carica episodio da meta.json
+let episodes = [];
 try {
   episodes = JSON.parse(fs.readFileSync("./meta.json", "utf-8"));
   console.log(`✅ Caricati ${episodes.length} episodi`);
 } catch (err) {
   console.error("❌ Errore leggendo meta.json:", err.message);
-  episodes = [];
 }
 
-// — Homepage di cortesia —
+// Homepage di cortesia
 app.get("/", (req, res) => {
   const proto   = req.get("x-forwarded-proto") || req.protocol;
   const host    = req.get("host");
@@ -33,7 +30,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-// — Manifest.json —
+// Manifest.json
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "com.dakids",
@@ -49,7 +46,7 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-// — Catalog/channel/pocoyo.json —
+// Catalog/channel/pocoyo.json
 app.get("/catalog/channel/pocoyo.json", (req, res) => {
   res.json({
     metas: [
@@ -65,7 +62,7 @@ app.get("/catalog/channel/pocoyo.json", (req, res) => {
   });
 });
 
-// — Meta/channel/dk-pocoyo.json —
+// Meta/channel/dk-pocoyo.json
 app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   res.json({
     meta: {
@@ -80,18 +77,12 @@ app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
   });
 });
 
-// — Stream/channel/dk-pocoyo.json —
-// Restituisce per ogni episodio sia l'iframe (per Web) che l'url (per tutti gli altri client)
+// Stream/channel/dk-pocoyo.json
 app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
   const streams = episodes.map(ep => {
-    const watchUrl  = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
-    const embedUrl  = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
-
+    const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
     return {
       title: ep.title,
-      // usato da clienti nativi (Desktop, Android, TV)
-      url: watchUrl,
-      // usato da Stremio Web per montare l'iframe
       iframe: `
         <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
           <iframe
@@ -107,11 +98,11 @@ app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
     };
   });
 
-  console.log("🔍 /stream returned", streams.length, "streams");
+  console.log(`🔍 /stream restituisce ${streams.length} stream`);
   res.json({ streams });
 });
 
-// — Avvia il server —
+// Avvia il server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`);
