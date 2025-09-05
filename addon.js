@@ -3,35 +3,53 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import ytdl from "ytdl-core";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// — Carica la lista di episodi da meta.json —
+// Carica episodi da meta.json
 let episodes = [];
 try {
   const raw = fs.readFileSync(path.resolve("./meta.json"), "utf-8");
   episodes = JSON.parse(raw);
-  console.log(`✅ Caricati ${episodes.length} episodi da meta.json`);
-} catch (err) {
-  console.error("❌ Impossibile leggere meta.json:", err.message);
-  episodes = [];
+  console.log(`✅ Caricati ${episodes.length} episodi`);
+} catch (e) {
+  console.error("❌ Errore leggendo meta.json:", e.message);
 }
 
-// — Root → redirect a manifest.json —
-app.get("/", (req, res) => {
-  res.redirect("/manifest.json");
-});
+// Estrai il miglior flusso HLS o MP4 progressivo
+async function getStreamUrl(id) {
+  const url = `https://www.youtube.com/watch?v=${id}`;
+  try {
+    const info = await ytdl.getInfo(url, {
+      requestOptions: { headers: { Cookie: process.env.YOUTUBE_COOKIES || "" } }
+    });
+    // 1) HLS (m3u8)
+    const hls = ytdl.chooseFormat(info.formats, f =>
+      f.mimeType && f.mimeType.includes("mpegurl")
+    );
+    if (hls && hls.url) return hls.url;
+    // 2) MP4 audio+video
+    const prog = ytdl.chooseFormat(info.formats, f =>
+      f.container === "mp4" && f.hasVideo && f.hasAudio
+    );
+    if (prog && prog.url) return prog.url;
+  } catch (err) {
+    console.warn(`⚠️ Impossibile risolvere stream ${id}: ${err.message}`);
+  }
+  // Fallback: link YouTube
+  return url;
+}
 
-// — 1) Manifest.json —
-app.get("/manifest.json", (req, res) => {
-  console.log("📄 /manifest.json richiesto");
+// 1) Manifest (type "channel")
+app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
     version: "1.0.0",
-    name: "Dakids",
-    description: "Pocoyo 🇮🇹 – Episodi per bambini",
+    name: "Pocoyo 🇮🇹 – Dakids",
+    description: "Canale YouTube Pocoyo in italiano",
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
@@ -41,9 +59,8 @@ app.get("/manifest.json", (req, res) => {
   });
 });
 
-// — 2) Catalog: un solo canale —
-app.get("/catalog/channel/pocoyo.json", (req, res) => {
-  console.log("📚 /catalog/channel/pocoyo.json richiesto");
+// 2) Catalog: lista canali (uno solo)
+app.get("/catalog/channel/pocoyo.json", (_req, res) => {
   res.json({
     metas: [
       {
@@ -58,51 +75,39 @@ app.get("/catalog/channel/pocoyo.json", (req, res) => {
   });
 });
 
-// — 3) Meta del canale —
-app.get("/meta/channel/dk-pocoyo.json", (req, res) => {
-  console.log("📋 /meta/channel/dk-pocoyo.json richiesto");
-  const ep = episodes[0] || {};
+// 3) Meta del canale
+app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   res.json({
     meta: {
       id: "dk-pocoyo",
       type: "channel",
-      name: ep.title || "Pocoyo 🇮🇹",
-      poster: ep.poster || "",
-      description: ep.title || "Episodi divertenti per bambini",
-      background: ep.poster || "",
+      name: "Pocoyo 🇮🇹",
+      poster: episodes[0]?.poster || "",
+      description: "Episodi divertenti per bambini",
+      background: episodes[0]?.poster || "",
       genres: ["Animation", "Kids"]
     }
   });
 });
 
-// — 4) Stream: iframe universale YouTube —
-app.get("/stream/channel/dk-pocoyo.json", (req, res) => {
-  console.log("🎬 /stream/channel/dk-pocoyo.json richiesto");
-  const streams = episodes.map(ep => {
-    const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}?autoplay=1&rel=0`;
-    return {
-      title: ep.title,
-      iframe: `
-        <div style="position:absolute;top:0;left:0;width:100%;height:100%;">
-          <iframe
-            width="100%"
-            height="100%"
-            src="${embedUrl}"
-            frameborder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowfullscreen>
-          </iframe>
-        </div>`.trim(),
-      behaviorHints: { notWebReady: false }
-    };
-  });
-
-  console.log(`🔍 /stream restituisce ${streams.length} stream`);
+// 4) Stream: estrae url in-app per ogni episodio
+app.get("/stream/channel/dk-pocoyo.json", async (_req, res) => {
+  const streams = await Promise.all(
+    episodes.map(async ep => {
+      const sUrl = await getStreamUrl(ep.youtubeId);
+      return {
+        title: ep.title,
+        url: sUrl,
+        behaviorHints: { notWebReady: false }
+      };
+    })
+  );
+  console.log(`🔍 Restituiti ${streams.length} stream`);
   res.json({ streams });
 });
 
-// — Avvia il server —
+// Avvia server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Dakids Addon attivo su http://localhost:${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`🚀 Dakids Addon attivo su port ${PORT}`)
+);
