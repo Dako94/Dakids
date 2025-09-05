@@ -2,14 +2,14 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import YTDlpWrap from "yt-dlp-wrap";
+import YTDlpWrap from "yt-dlp-wrap"; // ✅ Import corretto per ESM
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // ===================== CONFIG YT-DLP =====================
-// Usa il binario yt-dlp dal PATH
+// Usa il binario yt-dlp dal PATH (installato con pip su Render)
 const ytDlpWrap = new YTDlpWrap("yt-dlp");
 
 // ===================== LETTURA META.JSON =====================
