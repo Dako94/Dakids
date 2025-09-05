@@ -27,7 +27,7 @@ try {
   console.error("❌ Errore meta.json:", err.message);
 }
 
-// — Homepage HTML con personaggi —
+// — Homepage HTML —
 app.get("/", (req, res) => {
   const base = `${req.protocol}://${req.get("host")}`;
   const manifest = `${base}/manifest.json`;
@@ -128,18 +128,27 @@ app.get("/meta/channel/:id.json", (req, res) => {
   });
 });
 
-// — Stream (embed diretto) —
+// — Stream con doppia opzione —
 app.get("/stream/channel/:id.json", (req, res) => {
   const ep = episodes.find(e => `dk-${e.youtubeId}` === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
-  const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}`;
+  const proxyUrl = `https://dakids-proxy.onrender.com/play/${ep.youtubeId}`;
+  const ytUrl = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
+
   res.json({
-    streams: [{
-      title: ep.title,
-      url: embedUrl,
-      behaviorHints: { notWebReady: false }
-    }]
+    streams: [
+      {
+        title: ep.title + " (Player interno)",
+        url: proxyUrl,
+        behaviorHints: { notWebReady: false }
+      },
+      {
+        title: ep.title + " (Apri su YouTube)",
+        url: ytUrl,
+        behaviorHints: { notWebReady: true }
+      }
+    ]
   });
 });
 
