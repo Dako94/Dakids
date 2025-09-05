@@ -105,24 +105,29 @@ app.get("/health", (req, res) => {
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "dakids.addon",
-    version: "1.0.0",
+    version: "1.0.1", // Versione aggiornata
     name: "Dakids TV",
     description: "Cartoni animati per bambini - iframe embed compatible",
     resources: ["catalog", "stream"],
     types: ["movie"],
     idPrefixes: ["dk"],
     catalogs: [
-      { type: "movie", id: "dakids", name: "Cartoni per Bambini" }
+      {
+        type: "movie",
+        id: "dakids",
+        name: "Cartoni per Bambini",
+        logo: "https://i.imgur.com/K1264cT.png", // Immagine di esempio
+        poster: "https://i.imgur.com/gO6vKzB.png" // Immagine di esempio
+      }
     ]
   });
 });
 
 // ===================== CATALOG =====================
 app.get("/catalog/movie/dakids.json", (req, res) => {
-  // Modifica qui: Usiamo l'ID del file meta.json
   const metas = allVideos.map(video => {
     return {
-      id: video.id, // Usa l'ID da meta.json
+      id: video.id,
       type: "movie",
       name: video.title,
       poster: video.thumbnail,
@@ -140,7 +145,6 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
   
-  // Modifica qui: Troviamo il video per ID, non per indice
   const video = allVideos.find(v => v.id === videoId);
 
   if (!video) {
