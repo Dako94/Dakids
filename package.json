@@ -8,8 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "start": "node addon.js",
-    
+    "start": "node addon.js"
   },
   "dependencies": {
     "express": "^4.18.2",
