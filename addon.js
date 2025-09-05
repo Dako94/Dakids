@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import { exec } from "youtube-dl-exec";
 
 const app = express();
 app.use(cors());
@@ -133,15 +134,36 @@ app.get("/meta/channel/dk-pocoyo.json", (_req, res) => {
   });
 });
 
-// — Stream/channel/dk-pocoyo.json — usa ytId invece di iframe —
-app.get("/stream/channel/dk-pocoyo.json", (_req, res) => {
-  const streams = episodes.map(ep => {
-    return {
-      title: ep.title,
-      ytId: ep.youtubeId,   // 👈 campo corretto per player YouTube
-      behaviorHints: { notWebReady: false }
-    };
-  });
+// — Stream/channel/dk-pocoyo.json con yt-dlp —
+app.get("/stream/channel/dk-pocoyo.json", async (_req, res) => {
+  const streams = await Promise.all(episodes.map(async (ep) => {
+    try {
+      const info = await exec(
+        `https://www.youtube.com/watch?v=${ep.youtubeId}`,
+        {
+          dumpSingleJson: true,
+          noCheckCertificates: true,
+          noWarnings: true,
+          preferFreeFormats: true,
+          addHeader: ["referer:youtube.com", "user-agent:googlebot"]
+        }
+      );
+
+      // prendi la migliore qualità mp4/mp4a
+      const format = info.formats.find(f => f.url && f.vcodec !== "none");
+      return {
+        title: ep.title,
+        url: format?.url || `https://www.youtube.com/watch?v=${ep.youtubeId}`,
+        behaviorHints: { notWebReady: false }
+      };
+    } catch (err) {
+      console.error("Errore yt-dlp:", err.message);
+      return {
+        title: ep.title,
+        externalUrl: `https://www.youtube.com/watch?v=${ep.youtubeId}`
+      };
+    }
+  }));
 
   console.log(`🔍 /stream restituisce ${streams.length} stream`);
   res.json({ streams });
