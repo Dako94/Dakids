@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node addon.js",
-    "postinstall": "npx yt-dlp-wrap download"
+    
   },
   "dependencies": {
     "express": "^4.18.2",
