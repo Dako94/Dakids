@@ -2,16 +2,23 @@
 import express from "express";
 import cors from "cors";
 import fs from "fs";
-import pkg from "yt-dlp-wrap"; // ✅ Import compatibile con ESM
-const YTDlpWrap = pkg.default; // ✅ Estraggo la classe dalla default export
+import pkg from "yt-dlp-wrap"; // Import compatibile con ESM
+const YTDlpWrap = pkg.default;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // ===================== CONFIG YT-DLP =====================
-// Usa il binario yt-dlp dal PATH (installato con pip su Render)
 const ytDlpWrap = new YTDlpWrap("yt-dlp");
+
+// Test immediato per vedere se yt-dlp è disponibile
+ytDlpWrap.execPromise(["--version"])
+  .then(v => console.log("✅ yt-dlp versione rilevata:", v.trim()))
+  .catch(err => {
+    console.error("❌ yt-dlp non trovato o non eseguibile:", err);
+    console.error("Suggerimento: assicurati che 'pip install -U yt-dlp' sia nel Build Command di Render");
+  });
 
 // ===================== LETTURA META.JSON =====================
 let allVideos = [];
@@ -23,6 +30,95 @@ try {
   console.error("❌ Errore meta.json:", err);
   allVideos = [];
 }
+
+// ===================== HOME PAGE BIMBO-FRIENDLY =====================
+app.get("/", (req, res) => {
+  const protocol = req.get('x-forwarded-proto') || req.protocol;
+  const host = req.get('host');
+  const baseUrl = `${protocol}://${host}`;
+
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="it">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Dakids TV 🎈</title>
+      <style>
+        body {
+          font-family: 'Comic Sans MS', cursive, sans-serif;
+          background: linear-gradient(to bottom, #fffae3, #ffe4e1);
+          color: #333;
+          text-align: center;
+          padding: 2rem;
+        }
+        h1 {
+          color: #ff6f61;
+          font-size: 2.5rem;
+        }
+        p {
+          font-size: 1.2rem;
+        }
+        button {
+          background: #4ecdc4;
+          color: white;
+          border: none;
+          padding: 15px 25px;
+          font-size: 1.2rem;
+          border-radius: 30px;
+          cursor: pointer;
+          margin-top: 1rem;
+          box-shadow: 0 4px #3bb3a3;
+        }
+        button:hover {
+          background: #45b3a3;
+        }
+        .video-preview {
+          display: inline-block;
+          margin: 1rem;
+          border: 3px solid #ffd700;
+          border-radius: 15px;
+          overflow: hidden;
+          width: 200px;
+          background: white;
+        }
+        .video-preview img {
+          width: 100%;
+          display: block;
+        }
+        .video-title {
+          padding: 0.5rem;
+          background: #fffacd;
+          font-size: 1rem;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>🎉 Benvenuto su Dakids TV! 🎨</h1>
+      <p>Cartoni animati e video divertenti per bambini 👶📺</p>
+      <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
+      <p style="font-size:0.9rem; color:#555;">Poi incollalo in Stremio per aggiungere l'addon</p>
+      <hr>
+      <h2>📺 Ultimi Video</h2>
+      <div>
+        ${allVideos.slice(0, 6).map(video => `
+          <div class="video-preview">
+            <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg'">
+            <div class="video-title">${video.title}</div>
+          </div>
+        `).join('')}
+      </div>
+      <script>
+        function copyManifest() {
+          navigator.clipboard.writeText("${baseUrl}/manifest.json")
+            .then(() => alert("✅ Manifest copiato negli appunti!"))
+            .catch(() => alert("❌ Impossibile copiare il manifest"));
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
 
 // ===================== FUNZIONI =====================
 function durationToMinutes(duration) {
@@ -45,7 +141,7 @@ async function getDirectUrl(youtubeId) {
     ]);
     return output.trim();
   } catch (err) {
-    console.error("❌ Errore yt-dlp:", err);
+    console.error("❌ Errore yt-dlp durante estrazione URL:", err);
     return null;
   }
 }
