@@ -129,7 +129,7 @@ app.get("/meta/channel/:id.json", (req, res) => {
 });
 
 // — Stream con verifica API YouTube —
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const YOUTUBE_API_KEY = "AIzaSyD9h7rRosf1WLbUrX7QPoP89J6PV4QmyoM";
 
 async function isEmbeddable(videoId) {
   try {
@@ -145,7 +145,7 @@ async function isEmbeddable(videoId) {
 }
 
 app.get("/stream/channel/:id.json", async (req, res) => {
-  const ep = episodes.find(e => `dk-${e.youtubeId}` === req.params.id);
+  const ep = episodes.find(e => `dk-${ep.youtubeId}` === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
   const embeddable = await isEmbeddable(ep.youtubeId);
