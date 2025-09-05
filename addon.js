@@ -105,9 +105,9 @@ app.get("/health", (req, res) => {
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "dakids.addon",
-    version: "1.0.1",
+    version: "1.0.2",
     name: "Dakids TV",
-    description: "Cartoni animati per bambini - iframe embed compatible",
+    description: "Cartoni animati per bambini - compatibile con link esterni YouTube",
     resources: ["catalog", "stream"],
     types: ["movie"],
     idPrefixes: ["dk"],
@@ -117,7 +117,8 @@ app.get("/manifest.json", (req, res) => {
         id: "dakids",
         name: "Cartoni per Bambini",
         logo: "https://i.imgur.com/K1264cT.png",
-        poster: "https://i.imgur.com/gO6vKzB.png"
+        poster: "https://i.imgur.com/gO6vKzB.png",
+        extra: [{ name: "search" }, { name: "skip" }]
       }
     ]
   });
@@ -128,10 +129,10 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
     const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
     return {
-      id: video.id,
+      id: video.youtubeId, // uso youtubeId come ID
       type: "movie",
       name: video.title,
-      poster: video.thumbnail,
+      poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
       description: video.title,
       released: formatDate(video.date),
       runtime: `${runtimeInMinutes} min`, 
@@ -147,7 +148,7 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
 app.get("/stream/movie/:videoId.json", (req, res) => {
   const videoId = req.params.videoId;
   
-  const video = allVideos.find(v => v.id === videoId);
+  const video = allVideos.find(v => v.youtubeId === videoId);
 
   if (!video) {
     console.error(`❌ Video non trovato con ID: ${videoId}`);
@@ -157,8 +158,8 @@ app.get("/stream/movie/:videoId.json", (req, res) => {
   res.json({
     streams: [{
       title: video.title,
-      url: `https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&rel=0&modestbranding=1`,
-      behaviorHints: { notWebReady: false, bingeGroup: video.youtubeId }
+      externalUrl: `https://www.youtube.com/watch?v=${video.youtubeId}`,
+      behaviorHints: { notWebReady: true, bingeGroup: video.youtubeId }
     }]
   });
 });
