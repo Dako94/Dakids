@@ -1,312 +1,46 @@
-
-    [
-  {
-    "id": "dkDKvC8Mfb6_8",
-    "title": "Video di prova",
-    "thumbnail": "https://i.imgur.com/K1264cT.png",
-    "youtubeId": "dQw4w9WgXcQ",
-    "duration": "1:00",
-    "date": "20230801"
-  },
-  
+[
   {
     "id": "dk_84F0RO6o8M",
-    "youtubeId": "_84F0RO6o8M",
-    "title": "🎉 La FESTA IN MASCHERA di Pocoyo! Divertiti con i travestimenti di Pocoyo! | Pocoyo 🇮🇹 Italiano",
-    "viewCount": 3452,
-    "date": "20250901",
-    "duration": "6:03",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/_84F0RO6o8M/maxresdefault.jpg"
+    "type": "channel",
+    "name": "🎉 La FESTA IN MASCHERA di Pocoyo!",
+    "poster": "https://i.ytimg.com/vi/_84F0RO6o8M/maxresdefault.jpg",
+    "description": "Divertiti con i travestimenti di Pocoyo! | Pocoyo 🇮🇹 Italiano",
+    "released": "2025-09-01",
+    "runtime": "6 min",
+    "genres": ["Animation", "Kids"],
+    "behaviorHints": { "bingeGroup": "_84F0RO6o8M" }
   },
   {
     "id": "dkMCYRCGxNyZk",
-    "youtubeId": "MCYRCGxNyZk",
-    "title": "🎢 L’INCREDIBILE Montagna Russa di Pocoyo! Esplora il parco divertimenti! | Pocoyo 🇮🇹 Italiano",
-    "viewCount": 4888,
-    "date": "20250829",
-    "duration": "1:04:05",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/MCYRCGxNyZk/maxresdefault.jpg"
+    "type": "channel",
+    "name": "🎢 L’INCREDIBILE Montagna Russa di Pocoyo!",
+    "poster": "https://i.ytimg.com/vi/MCYRCGxNyZk/maxresdefault.jpg",
+    "description": "Esplora il parco divertimenti! | Pocoyo 🇮🇹 Italiano",
+    "released": "2025-08-29",
+    "runtime": "64 min",
+    "genres": ["Animation", "Kids"],
+    "behaviorHints": { "bingeGroup": "MCYRCGxNyZk" }
   },
   {
     "id": "dkDKvC8Mfb6_8",
-    "youtubeId": "DKvC8Mfb6_8",
-    "title": "⏳ Pocoyo viaggia indietro nel TEMPO! Pocoyo salva la giornata! | Pocoyo 🇮🇹 Italiano | Cartoni",
-    "viewCount": 4970,
-    "date": "20250825",
-    "duration": "6:58",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/DKvC8Mfb6_8/maxresdefault.jpg"
+    "type": "channel",
+    "name": "⏳ Pocoyo viaggia indietro nel TEMPO!",
+    "poster": "https://i.ytimg.com/vi/DKvC8Mfb6_8/maxresdefault.jpg",
+    "description": "Pocoyo salva la giornata! | Pocoyo 🇮🇹 Italiano",
+    "released": "2025-08-25",
+    "runtime": "7 min",
+    "genres": ["Animation", "Kids"],
+    "behaviorHints": { "bingeGroup": "DKvC8Mfb6_8" }
   },
   {
     "id": "dkLZWoYc0MR1Y",
-    "youtubeId": "LZWoYc0MR1Y",
-    "title": "SUPER POCOYO! Pocoyo e i suoi amici diventano SUPEREROI! | Pocoyo 🇮🇹 Italiano | Cartoni Animati",
-    "viewCount": 10323,
-    "date": "20250822",
-    "duration": "2:06:30",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/LZWoYc0MR1Y/maxresdefault.jpg"
-  },
-  {
-    "id": "dkJ0zBvpfaf7Q",
-    "youtubeId": "J0zBvpfaf7Q",
-    "title": "📞 Pato ama il suo telefono VIRALE! NUOVA STAGIONE 4 | Pocoyo 🇮🇹 Italiano | Cartoni animati",
-    "viewCount": 9649,
-    "date": "20250818",
-    "duration": "6:03",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/J0zBvpfaf7Q/maxresdefault.jpg"
-  },
-  {
-    "id": "dkDGWc9iiafS4",
-    "youtubeId": "DGWc9iiafS4",
-    "title": "☀️ Goditi le VACANZE con Pocoyo! Pocoyo si rilassa e si diverte! | Pocoyo 🇮🇹 Italiano | Cartoni",
-    "viewCount": 10849,
-    "date": "20250815",
-    "duration": "2:13:50",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/DGWc9iiafS4/maxresdefault.jpg"
-  },
-  {
-    "id": "dkW8kRely8BDM",
-    "youtubeId": "W8kRely8BDM",
-    "title": "🤩 Pocoyo IMPARA I COLORI! Rosso, Blu, Verde e ARCOVOLO! | Pocoyo 🇮🇹 Italiano | Cartoni animati",
-    "viewCount": 8833,
-    "date": "20250812",
-    "duration": "6:58",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/W8kRely8BDM/maxresdefault.jpg"
-  },
-  {
-    "id": "dkkpYFhyY6Jsc",
-    "youtubeId": "kpYFhyY6Jsc",
-    "title": "🪄 Gli INCANTESIMI MAGICI di Pocoyo! Pocoyo è un MAGO! | Pocoyo 🇮🇹 Italiano | Cartoni per bambini",
-    "viewCount": 11443,
-    "date": "20250808",
-    "duration": "1:08:39",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/kpYFhyY6Jsc/maxresdefault.jpg"
-  },
-  {
-    "id": "dkCHzPtd402t4",
-    "youtubeId": "CHzPtd402t4",
-    "title": "NUOVO EPISODIO! Pocoyo è un ROBOT! Cosa sta succedendo?! | Pocoyo 🇮🇹 Italiano",
-    "viewCount": 22228,
-    "date": "20250802",
-    "duration": "1:58:33",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/CHzPtd402t4/maxresdefault.jpg"
-  },
-  {
-    "id": "dkA3ytn4o3V6M",
-    "youtubeId": "A3ytn4o3V6M",
-    "title": "Pocoyo viene HACKERATO?! Gioca a calcio con un ROBOT GIGANTE!! | Pocoyo 🇮🇹 Italiano | Cartoni",
-    "viewCount": 13349,
-    "date": "20250728",
-    "duration": "7:17",
-    "channelName": "Pocoyo 🇮🇹 Italiano - Canale Ufficiale",
-    "thumbnail": "https://i.ytimg.com/vi/A3ytn4o3V6M/maxresdefault.jpg"
-  },
-  {
-    "id": "dkIlgzT6z9F-g",
-    "youtubeId": "IlgzT6z9F-g",
-    "title": "The DISASTROUS Walk to School 😩 Woodland Walk 🏫 Peppa Pig Official Full Episodes | 2 Hours",
-    "viewCount": 153018,
-    "date": "20250904",
-    "duration": "2:01:10",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/IlgzT6z9F-g/maxresdefault.jpg"
-  },
-  {
-    "id": "dke3yYYKKpvgo",
-    "youtubeId": "e3yYYKKpvgo",
-    "title": "Peppa as a GROWN-UP?! 🏡 Peppa and Suzy Drive a Car 🚗 Peppa Pig Full Episodes | 30 Minutes",
-    "viewCount": 255350,
-    "date": "20250903",
-    "duration": "31:21",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/e3yYYKKpvgo/maxresdefault.jpg"
-  },
-  {
-    "id": "dk7Be4cD4jpFQ",
-    "youtubeId": "7Be4cD4jpFQ",
-    "title": "Baby Peppa's FIRST Ice Cream 🍦 EPIC Food FIGHT! 🥤 Peppa Pig Tales Full Episodes | 30 Mins",
-    "viewCount": 485654,
-    "date": "20250902",
-    "duration": "33:01",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/7Be4cD4jpFQ/maxresdefault.jpg"
-  },
-  {
-    "id": "dkpG_imikVkMQ",
-    "youtubeId": "pG_imikVkMQ",
-    "title": "Peppa Pig Tales 2025 🌈 Super RAINBOW Buffet 🍓 BRAND NEW Peppa Pig Episodes",
-    "viewCount": 1803864,
-    "date": "20250830",
-    "duration": "2:00:53",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/pG_imikVkMQ/maxresdefault.jpg"
-  },
-  {
-    "id": "dkU2i-t7jVVXA",
-    "youtubeId": "U2i-t7jVVXA",
-    "title": "Peppa Pig Tales 2025 🚂 Peppa and Evie's MINI Steam Train Ride 😮 BRAND NEW Peppa Pig Episodes",
-    "viewCount": 1868038,
-    "date": "20250829",
-    "duration": "2:00:43",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/U2i-t7jVVXA/maxresdefault.jpg"
-  },
-  {
-    "id": "dkCc_lSvirHww",
-    "youtubeId": "Cc_lSvirHww",
-    "title": "Peppa's SILLY Singing Lesson 🎤 Meet Mummy Rhino! 🎵 Peppa Pig Full Episodes | SUPER COMP | 4 Hours",
-    "viewCount": 1008886,
-    "date": "20250828",
-    "duration": "4:02:17",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/Cc_lSvirHww/maxresdefault.jpg"
-  },
-  {
-    "id": "dknYejH_0anhk",
-    "youtubeId": "nYejH_0anhk",
-    "title": "CHEESE OVERLOAD 🧀 Daddy Pig FAINTS! 😨 Peppa Pig Official Full Episodes | 1 Hour Kids Cartoons",
-    "viewCount": 673733,
-    "date": "20250827",
-    "duration": "1:34:15",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/nYejH_0anhk/maxresdefault.jpg"
-  },
-  {
-    "id": "dknRX_QtQcGEA",
-    "youtubeId": "nRX_QtQcGEA",
-    "title": "Peppa's EMERGENCY! 🚨 Miss Rabbit Has a BIG Accident 😭🚑 Peppa Pig Full Episodes | 20 Minutes",
-    "viewCount": 3767913,
-    "date": "20250826",
-    "duration": "21:07",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/nRX_QtQcGEA/maxresdefault.jpg"
-  },
-  {
-    "id": "dke_istUpooBs",
-    "youtubeId": "e_istUpooBs",
-    "title": "Peppa Pig Tales 2025 💤 Peppa Helps BABY EVIE Sleep 💘 Bedtime Story 📖 BRAND NEW Peppa Pig Episode",
-    "viewCount": 1215284,
-    "date": "20250823",
-    "duration": "2:00:19",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/e_istUpooBs/maxresdefault.jpg"
-  },
-  {
-    "id": "dkuaFH7A7u9xs",
-    "youtubeId": "uaFH7A7u9xs",
-    "title": "Peppa Pig Tales 🔴 George Finds MYSTERY Red Button?! 😮 BRAND NEW Peppa Pig Episodes",
-    "viewCount": 2557100,
-    "date": "20250822",
-    "duration": "2:00:35",
-    "channelName": "Peppa Pig - Official Channel",
-    "thumbnail": "https://i.ytimg.com/vi/uaFH7A7u9xs/maxresdefault.jpg"
-  },
-  {
-    "id": "dkAIolwqkFWBI",
-    "youtubeId": "AIolwqkFWBI",
-    "title": "Race with a GIANT bird?! 🐦 | PJ Masks Full Episode | Cartoons for Kids | #superheroes",
-    "viewCount": 7994,
-    "date": "20250904",
-    "duration": "34:31",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/AIolwqkFWBI/maxresdefault.jpg"
-  },
-  {
-    "id": "dkbwCrvXPJ-g0",
-    "youtubeId": "bwCrvXPJ-g0",
-    "title": "Mission to the STARS 🌟 | PJ Masks Full Episode | Cartoons for Kids | #superheroes",
-    "viewCount": 7760,
-    "date": "20250902",
-    "duration": "34:31",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/bwCrvXPJ-g0/maxresdefault.jpg"
-  },
-  {
-    "id": "dktKOr4G6dvh4",
-    "youtubeId": "tKOr4G6dvh4",
-    "title": "Stuck in space with an ALIEN! 👽 | PJ Masks Full Episode | Cartoons for Kids | #superheroes",
-    "viewCount": 29371,
-    "date": "20250830",
-    "duration": "34:31",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/tKOr4G6dvh4/maxresdefault.jpg"
-  },
-  {
-    "id": "dkXxvt-LTatz0",
-    "youtubeId": "Xxvt-LTatz0",
-    "title": "Can Gekko save PJ Masks? | PJ Masks Full Episode | Cartoons for Kids | #superheroes",
-    "viewCount": 101854,
-    "date": "20250828",
-    "duration": "34:31",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/Xxvt-LTatz0/maxresdefault.jpg"
-  },
-  {
-    "id": "dkPHoPDdcvw-I",
-    "youtubeId": "PHoPDdcvw-I",
-    "title": "PJ Masks Full Episode | Real Gekko vs Fake Gekko! 🦎 | Cartoons for Kids | #superheroes",
-    "viewCount": 427094,
-    "date": "20250826",
-    "duration": "34:31",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/PHoPDdcvw-I/maxresdefault.jpg"
-  },
-  {
-    "id": "dkmLMaGcmD9fs",
-    "youtubeId": "mLMaGcmD9fs",
-    "title": "PJ Masks Full Episode | Heroes in Danger! The Wolfy-Bot's Trap!  🤖| Cartoons for Kids | #superheroes",
-    "viewCount": 484688,
-    "date": "20250821",
-    "duration": "22:05",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/mLMaGcmD9fs/maxresdefault.jpg"
-  },
-  {
-    "id": "dkeGnskCX7fdo",
-    "youtubeId": "eGnskCX7fdo",
-    "title": "PJ Masks Full Episode | Octobella Steals the Magic Book! 📖 | Cartoons for Kids | #superheroes",
-    "viewCount": 133347,
-    "date": "20250819",
-    "duration": "22:05",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/eGnskCX7fdo/maxresdefault.jpg"
-  },
-  {
-    "id": "dkIMLiDR95izI",
-    "youtubeId": "IMLiDR95izI",
-    "title": "Battle of the girl heroes! | PJ Masks Full Episode | Cartoons for Kids | #superheroes",
-    "viewCount": 318361,
-    "date": "20250816",
-    "duration": "34:31",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/IMLiDR95izI/maxresdefault.jpg"
-  },
-  {
-    "id": "dkZwyLLnWqq7U",
-    "youtubeId": "ZwyLLnWqq7U",
-    "title": "The Bubble Trap! 🫧 | PJ Masks Full Episode | Cartoons for Kids | #superheroes",
-    "viewCount": 225542,
-    "date": "20250814",
-    "duration": "23:01",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/ZwyLLnWqq7U/maxresdefault.jpg"
-  },
-  {
-    "id": "dkVDWGj7i_NL8",
-    "youtubeId": "VDWGj7i_NL8",
-    "title": "The GLOOPSTERS are BACK!  | PJ Masks Full Episode | Cartoons for Kids | #superheroes",
-    "viewCount": 139346,
-    "date": "20250812",
-    "duration": "23:01",
-    "channelName": "PJ Masks Official",
-    "thumbnail": "https://i.ytimg.com/vi/VDWGj7i_NL8/maxresdefault.jpg"
+    "type": "channel",
+    "name": "SUPER POCOYO!",
+    "poster": "https://i.ytimg.com/vi/LZWoYc0MR1Y/maxresdefault.jpg",
+    "description": "Pocoyo e i suoi amici diventano SUPEREROI! | Pocoyo 🇮🇹 Italiano",
+    "released": "2025-08-22",
+    "runtime": "127 min",
+    "genres": ["Animation", "Kids"],
+    "behaviorHints": { "bingeGroup": "LZWoYc0MR1Y" }
   }
 ]
