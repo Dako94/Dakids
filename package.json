@@ -1,7 +1,7 @@
 {
   "name": "dakids-addon",
   "version": "1.0.0",
-  "description": "Addon Stremio per il canale Pocoyo italiano",
+  "description": "Addon Stremio – canale Pocoyo italiano",
   "main": "addon.js",
   "type": "module",
   "scripts": {
@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "ytdl-core": "^4.11.2"
+    "cors": "^2.8.5"
   }
 }
