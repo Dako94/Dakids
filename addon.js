@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import fetch from "node-fetch";
 
 const app = express();
 app.use(cors());
@@ -128,28 +129,43 @@ app.get("/meta/channel/:id.json", (req, res) => {
   });
 });
 
-// — Stream con doppia opzione —
-app.get("/stream/channel/:id.json", (req, res) => {
+// — Stream con verifica API YouTube —
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+
+async function isEmbeddable(videoId) {
+  try {
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=player&id=${videoId}&key=${YOUTUBE_API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const html = data.items?.[0]?.player?.embedHtml || "";
+    return html.includes("youtube.com/embed/");
+  } catch (err) {
+    console.error(`❌ Errore API YouTube: ${err.message}`);
+    return false;
+  }
+}
+
+app.get("/stream/channel/:id.json", async (req, res) => {
   const ep = episodes.find(e => `dk-${e.youtubeId}` === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
-  const proxyUrl = `https://dakids-proxy.onrender.com/play/${ep.youtubeId}`;
+  const embeddable = await isEmbeddable(ep.youtubeId);
+  const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}`;
   const ytUrl = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
 
-  res.json({
-    streams: [
-      {
-        title: ep.title + " (Player interno)",
-        url: proxyUrl,
+  const streams = embeddable
+    ? [{
+        title: ep.title,
+        url: embedUrl,
         behaviorHints: { notWebReady: false }
-      },
-      {
+      }]
+    : [{
         title: ep.title + " (Apri su YouTube)",
         url: ytUrl,
         behaviorHints: { notWebReady: true }
-      }
-    ]
-  });
+      }];
+
+  res.json({ streams });
 });
 
 // — Avvia il server —
