@@ -127,11 +127,11 @@ app.get("/manifest.json", (req, res) => {
     logo: "https://i.imgur.com/K1264cT.png",
     background: "https://i.imgur.com/gO6vKzB.png",
     resources: ["catalog", "stream"],
-    types: ["channel"], // 👈 ora è channel
-    idPrefixes: ["dk"], // 👈 prefisso corretto
+    types: ["channel"],
+    idPrefixes: ["dk"],
     catalogs: [
       {
-        type: "channel", // 👈 ora è channel
+        type: "channel",
         id: "dakids",
         name: "Canali per Bambini",
         extra: [{ name: "search", isRequired: false }]
@@ -142,14 +142,11 @@ app.get("/manifest.json", (req, res) => {
 
 // ===================== CATALOG =====================
 app.get("/catalog/channel/dakids.json", (req, res) => {
-  console.log("📥 Catalogo richiesto");
-  console.log("Primi 5 ID:", allVideos.slice(0, 5).map(v => v.id));
-
   const metas = allVideos.map(video => {
     const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
     return {
       id: video.id.startsWith("dk") ? video.id : `dk${video.id}`,
-      type: "channel", // 👈 ora è channel
+      type: "channel",
       name: video.title,
       poster: video.thumbnail || `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg`,
       description: video.title,
@@ -166,11 +163,9 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/channel/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  console.log(`📥 Stream richiesto per ID: ${videoId}`);
-
   const video = allVideos.find(v => v.id === videoId);
+
   if (!video) {
-    console.error(`❌ Video non trovato con ID: ${videoId}`);
     return res.status(404).json({ streams: [] });
   }
 
