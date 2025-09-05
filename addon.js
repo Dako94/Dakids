@@ -89,6 +89,7 @@ app.get("/", (req, res) => {
 
 // ===================== FUNZIONI =====================
 function durationToMinutes(duration) {
+  if (!duration || typeof duration !== "string") return 0;
   const parts = duration.split(":").map(Number);
   if (parts.length === 3) return parts[0] * 60 + parts[1] + parts[2] / 60;
   if (parts.length === 2) return parts[0] + parts[1] / 60;
