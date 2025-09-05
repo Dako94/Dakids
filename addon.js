@@ -105,7 +105,7 @@ app.get("/health", (req, res) => {
 app.get("/manifest.json", (req, res) => {
   res.json({
     id: "dakids.addon",
-    version: "1.0.1", // Versione aggiornata
+    version: "1.0.1",
     name: "Dakids TV",
     description: "Cartoni animati per bambini - iframe embed compatible",
     resources: ["catalog", "stream"],
@@ -116,8 +116,8 @@ app.get("/manifest.json", (req, res) => {
         type: "movie",
         id: "dakids",
         name: "Cartoni per Bambini",
-        logo: "https://i.imgur.com/K1264cT.png", // Immagine di esempio
-        poster: "https://i.imgur.com/gO6vKzB.png" // Immagine di esempio
+        logo: "https://i.imgur.com/K1264cT.png",
+        poster: "https://i.imgur.com/gO6vKzB.png"
       }
     ]
   });
@@ -126,6 +126,7 @@ app.get("/manifest.json", (req, res) => {
 // ===================== CATALOG =====================
 app.get("/catalog/movie/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
+    const runtimeInMinutes = Math.floor(durationToMinutes(video.duration));
     return {
       id: video.id,
       type: "movie",
@@ -133,7 +134,8 @@ app.get("/catalog/movie/dakids.json", (req, res) => {
       poster: video.thumbnail,
       description: video.title,
       released: formatDate(video.date),
-      runtime: durationToMinutes(video.duration),
+      runtime: `${runtimeInMinutes} min`, 
+      posterShape: "regular",
       genres: ["Animation", "Kids"],
       behaviorHints: { bingeGroup: video.youtubeId }
     };
