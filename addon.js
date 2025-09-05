@@ -36,67 +36,18 @@ try {
   allVideos = [];
 }
 
-// ===================== HOME PAGE =====================
-app.get("/", (req, res) => {
-  const protocol = req.get('x-forwarded-proto') || req.protocol;
-  const host = req.get('host');
-  const baseUrl = `${protocol}://${host}`;
-
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="it">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Dakids TV 🎈</title>
-      <style>
-        body { font-family: 'Comic Sans MS', cursive, sans-serif; background: linear-gradient(to bottom, #fffae3, #ffe4e1); color: #333; text-align: center; padding: 2rem; }
-        h1 { color: #ff6f61; font-size: 2.5rem; }
-        p { font-size: 1.2rem; }
-        button { background: #4ecdc4; color: white; border: none; padding: 15px 25px; font-size: 1.2rem; border-radius: 30px; cursor: pointer; margin-top: 1rem; box-shadow: 0 4px #3bb3a3; }
-        button:hover { background: #45b3a3; }
-        .video-preview { display: inline-block; margin: 1rem; border: 3px solid #ffd700; border-radius: 15px; overflow: hidden; width: 200px; background: white; }
-        .video-preview img { width: 100%; display: block; }
-        .video-title { padding: 0.5rem; background: #fffacd; font-size: 1rem; }
-      </style>
-    </head>
-    <body>
-      <h1>🎉 Benvenuto su Dakids TV! 🎨</h1>
-      <p>Canali e video divertenti per bambini 👶📺</p>
-      <button onclick="copyManifest()">📜 Copia Manifest Stremio</button>
-      <p style="font-size:0.9rem; color:#555;">Poi incollalo in Stremio per aggiungere l'addon</p>
-      <hr>
-      <h2>📺 Ultimi Video</h2>
-      <div>
-        ${allVideos.slice(0, 6).map(video => `
-          <div class="video-preview">
-            <img src="${video.thumbnail}" alt="${video.title}" onerror="this.src='https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg'">
-            <div class="video-title">${video.title}</div>
-          </div>
-        `).join('')}
-      </div>
-      <script>
-        function copyManifest() {
-          navigator.clipboard.writeText("${baseUrl}/manifest.json")
-            .then(() => alert("✅ Manifest copiato negli appunti!"))
-            .catch(() => alert("❌ Impossibile copiare il manifest"));
-        }
-      </script>
-    </body>
-    </html>
-  `);
-});
-
 // ===================== FUNZIONI =====================
 function durationToMinutes(duration) {
   if (!duration || typeof duration !== "string") return 0;
   const parts = duration.split(":").map(Number);
   if (parts.length === 3) return parts[0] * 60 + parts[1] + parts[2] / 60;
   if (parts.length === 2) return parts[0] + parts[1] / 60;
-  return parseFloat(duration) || 0;
+  if (parts.length === 1) return parts[0];
+  return 0;
 }
 
 function formatDate(date) {
+  if (!date || typeof date !== "string") return undefined;
   return date.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
 }
 
@@ -124,9 +75,9 @@ app.get("/manifest.json", (req, res) => {
     id: "com.dakids.Stremio",
     version: "3.0.0",
     name: "Dakids",
-    description: "Canali per bambini - riproduzione diretta da YouTube",
-    logo: "https://i.imgur.com/K1264cT.png",
-    background: "https://i.imgur.com/gO6vKzB.png",
+    description: "Video per bambini - riproduzione diretta da YouTube",
+    logo: "https://tuo-dominio.it/media/icon.png",
+    background: "https://tuo-dominio.it/media/background.jpg",
     resources: ["catalog", "stream"],
     types: ["channel"],
     idPrefixes: ["dk"],
@@ -134,7 +85,7 @@ app.get("/manifest.json", (req, res) => {
       {
         type: "channel",
         id: "dakids",
-        name: "Canali per Bambini",
+        name: "Cartoni per Bambini",
         extra: [{ name: "search", isRequired: false }]
       }
     ]
@@ -144,8 +95,8 @@ app.get("/manifest.json", (req, res) => {
 // ===================== CATALOG =====================
 app.get("/catalog/channel/dakids.json", (req, res) => {
   const metas = allVideos.map(video => {
-    const runtimeInMinutes = durationToMinutes(video.duration || "0:00");
-    const releasedDate = video.date ? formatDate(video.date) : undefined;
+    const runtimeInMinutes = durationToMinutes(video.duration);
+    const releasedDate = formatDate(video.date);
 
     return {
       id: video.id.startsWith("dk") ? video.id : `dk${video.id}`,
@@ -166,7 +117,9 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
 // ===================== STREAM =====================
 app.get("/stream/channel/:videoId.json", async (req, res) => {
   const videoId = req.params.videoId;
-  const video = allVideos.find(v => v.id === videoId);
+  const video = allVideos.find(v =>
+    v.id === videoId || `dk${v.id}` === videoId || videoId === `dk${v.id}`
+  );
 
   if (!video || !video.youtubeId) {
     return res.status(404).json({ streams: [] });
