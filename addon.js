@@ -6,7 +6,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -111,7 +110,7 @@ app.get("/", (req, res) => {
     <body>
       <header>
         <h1>Dakids Addon</h1>
-        <p>Un solo catalogo con filtro per canale</p>
+        <p>Un solo catalogo con accesso ai canali</p>
       </header>
       <div class="container">
         <div class="card">
@@ -139,13 +138,13 @@ app.get("/", (req, res) => {
   `);
 });
 
-// — Manifest con filtro per canale (genre) —
+// — Manifest con un solo catalogo —
 app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
     version: "1.0.0",
     name: "Dakids – Cartoni 🇮🇹",
-    description: "Un solo catalogo con filtro per canale",
+    description: "Un solo catalogo con accesso ai canali",
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
@@ -154,55 +153,51 @@ app.get("/manifest.json", (_req, res) => {
         type: "channel",
         id: "dakids",
         name: "Dakids –",
-        extra: [
-          {
-            name: "genre",
-            isRequired: false,
-            options: channels
-          }
-        ]
+        extra: []
       }
     ]
   });
 });
 
-// — Catalog con filtro genre —
-app.get("/catalog/channel/dakids.json", (req, res) => {
-  const genre = (req.query.genre || "").toLowerCase();
-  const filtered = genre
-    ? episodes.filter(e => e.channel.toLowerCase() === genre)
-    : episodes;
-
-  const metas = filtered.map(ep => ({
-    id: `dk-${ep.youtubeId}`,
+// — Catalog: mostra solo i canali —
+app.get("/catalog/channel/dakids.json", (_req, res) => {
+  const metas = channels.map(channel => ({
+    id: `dk-${channel.toLowerCase().replace(/\s+/g, "-")}`,
     type: "channel",
-    name: ep.title,
-    poster: ep.poster,
-    description: ep.title,
-    genres: [ep.channel]
+    name: channel,
+    poster: `https://via.placeholder.com/300x450.png?text=${encodeURIComponent(channel)}`,
+    description: `Episodi di ${channel}`,
+    genres: ["Kids"]
   }));
 
   res.json({ metas });
 });
 
-// — Meta —
+// — Meta: restituisce gli episodi di quel canale —
 app.get("/meta/channel/:id.json", (req, res) => {
-  const videoId = req.params.id.replace("dk-", "");
-  const ep = episodes.find(e => e.youtubeId === videoId) || {};
+  const channelId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
+  const filtered = episodes.filter(e => e.channel.toLowerCase() === channelId);
+
+  const videos = filtered.map(ep => ({
+    id: `dk-${ep.youtubeId}`,
+    title: ep.title,
+    overview: ep.title,
+    thumbnail: ep.poster
+  }));
+
   res.json({
     meta: {
-      id: `dk-${videoId}`,
+      id: req.params.id,
       type: "channel",
-      name: ep.title || "Dakids",
-      poster: ep.poster || "",
-      description: ep.title || "",
-      background: ep.poster || "",
-      genres: [ep.channel || "Kids"]
+      name: channelId,
+      poster: `https://via.placeholder.com/300x450.png?text=${encodeURIComponent(channelId)}`,
+      description: `Episodi di ${channelId}`,
+      videos
     }
   });
 });
 
-// — Serve i video locali —
+// — Stream: serve i file mp4 —
 app.use("/videos", express.static(path.join(__dirname, "videos")));
 
 app.get("/stream/channel/:id.json", (req, res) => {
