@@ -49,7 +49,7 @@ app.get("/", (req, res) => {
         body {
           margin: 0;
           font-family: 'Segoe UI', sans-serif;
-          background: linear-gradient(135deg, #f9f9f9, #e0f7fa);
+          background: linear-gradient(135deg, #fce4ec, #e0f7fa);
           color: #333;
           text-align: center;
         }
@@ -104,19 +104,19 @@ app.get("/", (req, res) => {
           margin-top: 1rem;
           font-family: monospace;
           color: #555;
-          word-break: break-all;
+          word-break: break-word;
         }
       </style>
     </head>
     <body>
       <header>
         <h1>Dakids Addon</h1>
-        <p>Streaming per bambini – Cataloghi separati per ogni canale</p>
+        <p>Un solo catalogo con filtro per canale</p>
       </header>
       <div class="container">
         <div class="card">
           <h2>Manifest Stremio</h2>
-          <p>Copia e incolla questo manifest in Stremio per usare l'addon</p>
+          <p>Copia e incolla questo manifest in Stremio</p>
           <button id="copy-btn">📋 Copia Manifest</button>
           <div id="manifest-url">${manifest}</div>
         </div>
@@ -139,31 +139,39 @@ app.get("/", (req, res) => {
   `);
 });
 
-// — Manifest con cataloghi per ogni canale —
+// — Manifest con filtro per canale (genre) —
 app.get("/manifest.json", (_req, res) => {
-  const catalogs = channels.map(channel => ({
-    type: "channel",
-    id: `dakids-${channel.toLowerCase().replace(/\s+/g, "-")}`,
-    name: `Dakids – ${channel}`,
-    extra: []
-  }));
-
   res.json({
     id: "com.dakids",
     version: "1.0.0",
     name: "Dakids – Cartoni 🇮🇹",
-    description: "Cataloghi separati per ogni canale YouTube",
+    description: "Un solo catalogo con filtro per canale",
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
-    catalogs
+    catalogs: [
+      {
+        type: "channel",
+        id: "dakids",
+        name: "Dakids –",
+        extra: [
+          {
+            name: "genre",
+            isRequired: false,
+            options: channels
+          }
+        ]
+      }
+    ]
   });
 });
 
-// — Catalog per canale —
-app.get("/catalog/channel/:catalogId.json", (req, res) => {
-  const channelId = req.params.catalogId.replace("dakids-", "").replace(/-/g, " ").toLowerCase();
-  const filtered = episodes.filter(e => e.channel.toLowerCase() === channelId);
+// — Catalog con filtro genre —
+app.get("/catalog/channel/dakids.json", (req, res) => {
+  const genre = (req.query.genre || "").toLowerCase();
+  const filtered = genre
+    ? episodes.filter(e => e.channel.toLowerCase() === genre)
+    : episodes;
 
   const metas = filtered.map(ep => ({
     id: `dk-${ep.youtubeId}`,
@@ -171,7 +179,7 @@ app.get("/catalog/channel/:catalogId.json", (req, res) => {
     name: ep.title,
     poster: ep.poster,
     description: ep.title,
-    genres: ["Animation", "Kids"]
+    genres: [ep.channel]
   }));
 
   res.json({ metas });
@@ -189,7 +197,7 @@ app.get("/meta/channel/:id.json", (req, res) => {
       poster: ep.poster || "",
       description: ep.title || "",
       background: ep.poster || "",
-      genres: ["Animation", "Kids"]
+      genres: [ep.channel || "Kids"]
     }
   });
 });
