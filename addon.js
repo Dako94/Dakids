@@ -114,10 +114,11 @@ app.get("/catalog/channel/dakids.json", (_req, res) => {
 
 // — Meta —
 app.get("/meta/channel/:id.json", (req, res) => {
-  const ep = episodes.find(e => `dk-${e.youtubeId}` === req.params.id) || {};
+  const videoId = req.params.id.replace("dk-", "");
+  const ep = episodes.find(e => e.youtubeId === videoId) || {};
   res.json({
     meta: {
-      id: `dk-${ep.youtubeId}`,
+      id: `dk-${videoId}`,
       type: "channel",
       name: ep.title || "Dakids",
       poster: ep.poster || "",
@@ -128,47 +129,24 @@ app.get("/meta/channel/:id.json", (req, res) => {
   });
 });
 
-// — Stream con verifica API YouTube —
-const YOUTUBE_API_KEY = "AIzaSyD9h7rRosf1WLbUrX7QPoP89J6PV4QmyoM";
-
-async function isEmbeddable(videoId) {
-  try {
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=player&id=${videoId}&key=${YOUTUBE_API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const html = data.items?.[0]?.player?.embedHtml || "";
-    return html.includes("youtube.com/embed/");
-  } catch (err) {
-    console.error(`❌ Errore API YouTube: ${err.message}`);
-    return false;
-  }
-}
-
+// — Stream —
 app.get("/stream/channel/:id.json", async (req, res) => {
-  const ep = episodes.find(e => `dk-${ep.youtubeId}` === req.params.id);
+  const videoId = req.params.id.replace("dk-", "");
+  const ep = episodes.find(e => e.youtubeId === videoId);
   if (!ep) return res.json({ streams: [] });
 
-  const embeddable = await isEmbeddable(ep.youtubeId);
-  const embedUrl = `https://www.youtube.com/embed/${ep.youtubeId}`;
-  const ytUrl = `https://www.youtube.com/watch?v=${ep.youtubeId}`;
-
-  const streams = embeddable
-    ? [{
-        title: ep.title,
-        url: embedUrl,
-        behaviorHints: { notWebReady: false }
-      }]
-    : [{
-        title: ep.title + " (Apri su YouTube)",
-        url: ytUrl,
-        behaviorHints: { notWebReady: true }
-      }];
-
-  res.json({ streams });
+  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  res.json({
+    streams: [{
+      title: ep.title,
+      url: embedUrl,
+      behaviorHints: { notWebReady: false }
+    }]
+  });
 });
 
 // — Avvia il server —
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Dakids Addon attivo su https://dakids.onrender.com`);
+  console.log(`🚀 Dakids Addon attivo su porta ${PORT}`);
 });
