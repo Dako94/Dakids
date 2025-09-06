@@ -3,6 +3,9 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
@@ -20,7 +23,7 @@ app.use((req, res, next) => {
 // — Carica episodi —
 let episodes = [];
 try {
-  const raw = fs.readFileSync(path.resolve("./meta.json"), "utf-8");
+  const raw = fs.readFileSync(path.resolve(__dirname, "meta.json"), "utf-8");
   episodes = JSON.parse(raw);
   console.log(`✅ Caricati ${episodes.length} episodi`);
 } catch (err) {
