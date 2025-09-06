@@ -148,8 +148,8 @@ app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
     version: "1.0.0",
-    name: "Dakids – Cartoni 🇮🇹",
-    description: "Un solo catalogo con accesso ai canali",
+    name: "Dakids 🇮🇹",
+    description: "Cartoni per bambini",
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
@@ -157,7 +157,7 @@ app.get("/manifest.json", (_req, res) => {
       {
         type: "channel",
         id: "dakids",
-        name: "Dakids –",
+        name: "Dakids 🇮🇹",
         extra: []
       }
     ]
@@ -222,5 +222,5 @@ app.get("/stream/channel/:id.json", (req, res) => {
 // — Avvia il server —
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Dakids Addon attivo su porta ${PORT}`);
+  console.log(`🚀 Dakids 🇮🇹 Addon attivo su porta ${PORT}`);
 });
