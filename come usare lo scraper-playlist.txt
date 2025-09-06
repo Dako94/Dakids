@@ -1,0 +1,5 @@
+Aprire powershell:
+
+node scraper-playlist.js "https://www.youtube.com/playlist?list=PLlL3YHuCQ7gpwi7gqefNGo64OP6FTFQg9" Bluey
+
+Cambiare l'url; Dare invio
