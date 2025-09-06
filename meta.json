@@ -2,21 +2,25 @@
   {
     "youtubeId": "rKwBTfcakT0",
     "title": "🎩 Pocoyo – Episodi Speciali 2022",
-    "poster": "https://i.ytimg.com/vi/rKwBTfcakT0/hqdefault.jpg"
+    "poster": "https://i.ytimg.com/vi/rKwBTfcakT0/hqdefault.jpg",
+    "group": "Pocoyo"
   },
   {
     "youtubeId": "mRkKi6nEG28",
-    "title": "🐶 Bluey – Episodi Completi Stagione 1–3",
-    "poster": "https://i.ytimg.com/vi/mRkKi6nEG28/hqdefault.jpg"
+    "title": "🐶 Bluey – Stagione 1–3",
+    "poster": "https://i.ytimg.com/vi/mRkKi6nEG28/hqdefault.jpg",
+    "group": "Bluey"
   },
   {
     "youtubeId": "cGwPNR9ZUUI",
     "title": "🐷 Peppa Pig – Viaggio in Treno",
-    "poster": "https://i.ytimg.com/vi/cGwPNR9ZUUI/hqdefault.jpg"
+    "poster": "https://i.ytimg.com/vi/cGwPNR9ZUUI/hqdefault.jpg",
+    "group": "Peppa Pig"
   },
   {
     "youtubeId": "0Z7uBAHLFEk",
     "title": "🍉 Cocomelon – La Canzone della Colazione",
-    "poster": "https://i.ytimg.com/vi/0Z7uBAHLFEk/hqdefault.jpg"
+    "poster": "https://i.ytimg.com/vi/0Z7uBAHLFEk/hqdefault.jpg",
+    "group": "Cocomelon"
   }
 ]
