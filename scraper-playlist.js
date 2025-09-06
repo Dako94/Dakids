@@ -24,8 +24,9 @@ console.log(`📥 Scarico tutti i video da: ${PLAYLIST_URL}`);
 console.log(`📁 Salvo in canale: ${CHANNEL_NAME}`);
 
 try {
-  // Scarica video e metadati
-  execSync(`${YTDLP_PATH} -f mp4 -o "${OUTPUT_DIR}/%(id)s.mp4" --write-info-json "${PLAYLIST_URL}"`, {
+  // Scarica video in alta qualità (1080p → fallback 720p)
+  const formatSelector = `"bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]"`;
+  execSync(`${YTDLP_PATH} -f ${formatSelector} --merge-output-format mp4 -o "${OUTPUT_DIR}/%(id)s.mp4" --write-info-json "${PLAYLIST_URL}"`, {
     stdio: "inherit"
   });
 
