@@ -27,14 +27,17 @@ try {
   console.error("❌ Errore meta.json:", err.message);
 }
 
+// — Estrai gruppi unici —
+const groups = [...new Set(episodes.map(e => e.group))];
+
 // — Homepage HTML —
 app.get("/", (req, res) => {
   const base = `${req.protocol}://${req.get("host")}`;
   const manifest = `${base}/manifest.json`;
-  const cardsHtml = episodes.map(ep => `
+  const cardsHtml = groups.map(group => `
     <div class="card">
-      <img src="${ep.poster}" alt="${ep.title}">
-      <div class="title">${ep.title}</div>
+      <img src="https://via.placeholder.com/150?text=${encodeURIComponent(group)}" alt="${group}">
+      <div class="title">${group}</div>
     </div>
   `).join("");
 
@@ -60,7 +63,7 @@ app.get("/", (req, res) => {
     </head>
     <body>
       <h1>🎉 Dakids Addon</h1>
-      <p>Clicca sui personaggi o copia il manifest:</p>
+      <p>Categorie disponibili:</p>
       <div class="grid">${cardsHtml}</div>
       <button id="copy-btn">📋 Copia Manifest</button>
       <div id="manifest-url"></div>
@@ -83,8 +86,15 @@ app.get("/", (req, res) => {
   `);
 });
 
-// — Manifest —
+// — Manifest con cataloghi per ogni gruppo —
 app.get("/manifest.json", (_req, res) => {
+  const catalogs = groups.map(group => ({
+    type: "channel",
+    id: `dakids-${group.toLowerCase().replace(/\s+/g, "-")}`,
+    name: `Dakids – ${group}`,
+    extra: []
+  }));
+
   res.json({
     id: "com.dakids",
     version: "1.0.0",
@@ -93,22 +103,24 @@ app.get("/manifest.json", (_req, res) => {
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
-    catalogs: [
-      { type: "channel", id: "dakids", name: "Dakids 🇮🇹", extra: [] }
-    ]
+    catalogs
   });
 });
 
-// — Catalog —
-app.get("/catalog/channel/dakids.json", (_req, res) => {
-  const metas = episodes.map(ep => ({
+// — Catalog per gruppo —
+app.get("/catalog/channel/:catalogId.json", (req, res) => {
+  const groupId = req.params.catalogId.replace("dakids-", "").replace(/-/g, " ").toLowerCase();
+  const filtered = episodes.filter(e => e.group.toLowerCase() === groupId);
+
+  const metas = filtered.map(ep => ({
     id: `dk-${ep.youtubeId}`,
     type: "channel",
     name: ep.title,
     poster: ep.poster,
-    description: "Episodio per bambini",
+    description: ep.title,
     genres: ["Animation", "Kids"]
   }));
+
   res.json({ metas });
 });
 
@@ -129,53 +141,23 @@ app.get("/meta/channel/:id.json", (req, res) => {
   });
 });
 
-// — Stream con doppia opzione —
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "AIzaSyD9h7rRosf1WLbUrX7QPoP89J6PV4QmyoM";
+// — Serve i video locali —
+app.use("/videos", express.static(path.join(__dirname, "videos")));
 
-async function isEmbeddable(videoId) {
-  try {
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=player&id=${videoId}&key=${YOUTUBE_API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const html = data.items?.[0]?.player?.embedHtml || "";
-    return html.includes("youtube.com/embed/");
-  } catch (err) {
-    console.error(`❌ Errore API YouTube: ${err.message}`);
-    return false;
-  }
-}
-
-app.get("/stream/channel/:id.json", async (req, res) => {
+app.get("/stream/channel/:id.json", (req, res) => {
   const videoId = req.params.id.replace("dk-", "");
   const ep = episodes.find(e => e.youtubeId === videoId);
   if (!ep) return res.json({ streams: [] });
 
-  const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-  const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const embeddable = await isEmbeddable(videoId);
+  const fileUrl = `https://dakids.onrender.com/videos/${videoId}.mp4`;
 
-  const streams = embeddable
-    ? [
-        {
-          title: ep.title + " (Player interno)",
-          url: embedUrl,
-          behaviorHints: { notWebReady: false }
-        },
-        {
-          title: ep.title + " (Apri su YouTube)",
-          url: ytUrl,
-          behaviorHints: { notWebReady: true }
-        }
-      ]
-    : [
-        {
-          title: ep.title + " (Apri su YouTube)",
-          url: ytUrl,
-          behaviorHints: { notWebReady: true }
-        }
-      ];
-
-  res.json({ streams });
+  res.json({
+    streams: [{
+      title: ep.title,
+      url: fileUrl,
+      behaviorHints: { notWebReady: false }
+    }]
+  });
 });
 
 // — Avvia il server —
