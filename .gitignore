@@ -19,6 +19,7 @@ images/
 # 🧪 Test e debug
 *.test.js
 *.spec.js
+scraper-playlist.js
 coverage/
 
 # 💻 Sistema operativo
