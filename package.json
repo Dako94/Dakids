@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Addon Stremio per bambini con video YouTube embeddabili",
   "main": "addon.js",
+  "type": "module",
   "scripts": {
     "start": "node addon.js"
   },
