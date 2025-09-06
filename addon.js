@@ -10,6 +10,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// — Serve immagini e video —
+app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/videos", express.static(path.join(__dirname, "videos")));
+
+// — Redirect HTTPS su Render —
 app.enable("trust proxy");
 app.use((req, res, next) => {
   if (req.get("x-forwarded-proto") === "http") {
@@ -110,7 +115,7 @@ app.get("/", (req, res) => {
     <body>
       <header>
         <h1>Dakids Addon</h1>
-        <p>Un solo catalogo con accesso ai canali</p>
+        <p>Catalogo unico con accesso ai canali</p>
       </header>
       <div class="container">
         <div class="card">
@@ -159,13 +164,13 @@ app.get("/manifest.json", (_req, res) => {
   });
 });
 
-// — Catalog: mostra solo i canali —
+// — Catalog: mostra solo i canali con immagini personalizzate —
 app.get("/catalog/channel/dakids.json", (_req, res) => {
   const metas = channels.map(channel => ({
     id: `dk-${channel.toLowerCase().replace(/\s+/g, "-")}`,
     type: "channel",
     name: channel,
-    poster: `https://via.placeholder.com/300x450.png?text=${encodeURIComponent(channel)}`,
+    poster: `https://dakids.onrender.com/images/${channel.toLowerCase().replace(/\s+/g, "-")}.jpg`,
     description: `Episodi di ${channel}`,
     genres: ["Kids"]
   }));
@@ -190,7 +195,7 @@ app.get("/meta/channel/:id.json", (req, res) => {
       id: req.params.id,
       type: "channel",
       name: channelId,
-      poster: `https://via.placeholder.com/300x450.png?text=${encodeURIComponent(channelId)}`,
+      poster: `https://dakids.onrender.com/images/${channelId.replace(/\s+/g, "-")}.jpg`,
       description: `Episodi di ${channelId}`,
       videos
     }
@@ -198,8 +203,6 @@ app.get("/meta/channel/:id.json", (req, res) => {
 });
 
 // — Stream: serve i file mp4 —
-app.use("/videos", express.static(path.join(__dirname, "videos")));
-
 app.get("/stream/channel/:id.json", (req, res) => {
   const videoId = req.params.id.replace("dk-", "");
   const ep = episodes.find(e => e.youtubeId === videoId);
