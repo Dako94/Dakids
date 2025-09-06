@@ -1,35 +1,26 @@
-# Dipendenze Node.js
-node_modules
-
-# Log e debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-last_stream_url.txt
-
-# File temporanei
-.DS_Store
-Thumbs.db
-*.tmp
-*.swp
-*.swo
-
-# Output video scaricati
-videos/
-
-# Variabili d'ambiente
+# 🔒 File sensibili
 .env
-cookies.txt
-package-lock.json
-youtube_scraper.py
+render.yaml
+*.key
+*.secret
+*.token
+*.info.json
 
-# Build o cache
+# 📦 Dipendenze e build
+node_modules/
 dist/
+build/
 .cache/
 
-# VSCode e IDE vari
-.vscode/
-.idea/
-*.iml
+# 🎞️ File locali e media
+images/
+*.log
 
+# 🧪 Test e debug
+*.test.js
+*.spec.js
+coverage/
+
+# 💻 Sistema operativo
+.DS_Store
+Thumbs.db
