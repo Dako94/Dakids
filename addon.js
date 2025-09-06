@@ -181,8 +181,8 @@ app.get("/catalog/channel/dakids.json", (_req, res) => {
 // — Meta: restituisce gli episodi di quel canale —
 app.get("/meta/channel/:id.json", (req, res) => {
   const channelId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
-  const filtered = episodes.filter(e => e.channel.toLowerCase() === channelId);
-
+const filtered = episodes.filter(e => e.channel && e.channel.toLowerCase() === channelId);
+  
   const videos = filtered.map(ep => ({
     id: `dk-${ep.youtubeId}`,
     title: ep.title,
