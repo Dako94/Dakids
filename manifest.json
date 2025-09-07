@@ -3,14 +3,38 @@
   "version": "1.0.0",
   "name": "Dakids 🇮🇹",
   "description": "Episodi in italiano da YouTube",
-  "types": ["movie"],
+  "types": ["series"],
   "idPrefixes": ["dk"],
-  "resources": ["catalog","meta","stream"],
+  "resources": ["catalog", "meta", "stream"],
   "catalogs": [
     {
-      "type": "movie",
+      "type": "series",
+      "id": "bluey",
+      "name": "Bluey 🇮🇹",
+      "extra": []
+    },
+    {
+      "type": "series",
       "id": "pocoyo",
       "name": "Pocoyo 🇮🇹",
+      "extra": []
+    },
+    {
+      "type": "series",
+      "id": "peppa",
+      "name": "Peppa Pig 🇮🇹",
+      "extra": []
+    },
+    {
+      "type": "series",
+      "id": "cocomelon",
+      "name": "Cocomelon 🇮🇹",
+      "extra": []
+    },
+    {
+      "type": "series",
+      "id": "hank",
+      "name": "Hank e il Camion dei Rifiuti 🇮🇹",
       "extra": []
     }
   ]
