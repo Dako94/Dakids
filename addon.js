@@ -59,7 +59,7 @@ app.get("/manifest.json", (_req, res) => {
     version: "1.0.0",
     name: "Dakids 🇮🇹",
     description: "Cartoni per bambini",
-    logo: "https://dakids.onrender.com/media/icon.jpg",
+    logo: "https://dakids.onrender.com/media/icon.png",
     background: "https://dakids.onrender.com/media/background.jpg",
     types: ["channel"],
     idPrefixes: ["dk"],
