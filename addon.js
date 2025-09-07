@@ -25,18 +25,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Carica episodi
-let episodes = [];
+// Carica serie e episodi
+let seriesList = [];
 try {
   const raw = fs.readFileSync(path.resolve(__dirname, "meta.json"), "utf-8");
-  episodes = JSON.parse(raw);
-  console.log(`✅ Caricati ${episodes.length} episodi`);
+  seriesList = JSON.parse(raw);
+  console.log(`✅ Caricate ${seriesList.length} serie`);
 } catch (err) {
   console.error("❌ Errore meta.json:", err.message);
 }
 
+// Estrai tutti gli episodi annidati
+function getAllEpisodes() {
+  return seriesList.flatMap(series =>
+    Array.isArray(series.videos)
+      ? series.videos.map(ep => ({
+          ...ep,
+          channel: series.name || series.id,
+          seriesId: series.id
+        }))
+      : []
+  );
+}
+
 // Estrai canali unici
-const channels = [...new Set(episodes.map(e => e.channel).filter(Boolean))];
+const channels = seriesList.map(s => s.name || s.id);
 
 // Homepage HTML
 app.get("/", (req, res) => {
@@ -94,11 +107,12 @@ app.get("/catalog/channel/dakids.json", (_req, res) => {
 // Meta
 app.get("/meta/channel/:id.json", (req, res) => {
   const rawId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
-  const filtered = episodes.filter(e => e.channel && e.channel.toLowerCase() === rawId);
+  const allEpisodes = getAllEpisodes();
+  const filtered = allEpisodes.filter(e => e.channel && e.channel.toLowerCase() === rawId);
   const originalChannel = filtered.length > 0 ? filtered[0].channel : rawId;
 
   const videos = filtered.map(ep => ({
-    id: `dk-${ep.youtubeId}`,
+    id: ep.id,
     title: ep.title,
     overview: ep.title,
     thumbnail: ep.poster
@@ -118,11 +132,13 @@ app.get("/meta/channel/:id.json", (req, res) => {
 
 // Stream
 app.get("/stream/channel/:id.json", (req, res) => {
-  const videoId = req.params.id.replace("dk-", "");
-  const ep = episodes.find(e => e.youtubeId === videoId);
+  const allEpisodes = getAllEpisodes();
+  const ep = allEpisodes.find(e => e.id === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
-  const fileUrl = `https://dakids.onrender.com/videos/${videoId}.mp4`;
+  const fileUrl = ep.video.startsWith("https://drive.google.com")
+    ? ep.video
+    : `https://dakids.onrender.com/videos/${ep.id.replace("dk--", "")}.mp4`;
 
   res.json({
     streams: [{
