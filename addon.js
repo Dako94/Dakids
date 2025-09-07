@@ -11,6 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 // Serve immagini e video
+app.use("/media", express.static(path.join(__dirname, "media")));
 app.use("/images", express.static(path.join(__dirname, "images")));
 app.use("/videos", express.static(path.join(__dirname, "videos")));
 
@@ -58,6 +59,8 @@ app.get("/manifest.json", (_req, res) => {
     version: "1.0.0",
     name: "Dakids 🇮🇹",
     description: "Cartoni per bambini",
+    logo: "https://dakids.onrender.com/media/icon.jpg",
+    background: "https://dakids.onrender.com/media/background.jpg",
     types: ["channel"],
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
