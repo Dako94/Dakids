@@ -14,8 +14,6 @@ build/
 
 # 🎞️ File locali e media
 images/
-Videos/*.mp4
-videos/*.mp4
 
 *.log
 
