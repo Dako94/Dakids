@@ -1,9 +1,0 @@
-# 🎞️ Tracciamento video con Git LFS
-*.mp4 filter=lfs diff=lfs merge=lfs -text
-
-# 📄 Uniformità dei fine riga
-*.js text eol=lf
-*.json text eol=lf
-*.html text eol=lf
-*.css text eol=lf
-*.md text eol=lf
