@@ -1,272 +1,402 @@
 [
   {
-    "youtubeId": "cGwPNR9ZUUI",
-    "title": "🐷 Peppa Pig – Viaggio in Treno",
+    "id": "dk-peppa-pig",
+    "type": "series",
+    "name": "Peppa Pig 🇮🇹",
     "poster": "https://i.ytimg.com/vi/cGwPNR9ZUUI/hqdefault.jpg",
-    "channel": "Peppa Pig"
+    "videos": [
+      {
+        "id": "dk--cGwPNR9ZUUI",
+        "season": 1,
+        "episode": 1,
+        "title": "🐷 Peppa Pig – Viaggio in Treno",
+        "video": "https://yourdomain.com/Videos/cGwPNR9ZUUI.mp4",
+        "poster": "https://i.ytimg.com/vi/cGwPNR9ZUUI/hqdefault.jpg"
+      }
+    ]
   },
   {
-    "youtubeId": "0Z7uBAHLFEk",
-    "title": "🍉 Cocomelon – La Canzone della Colazione",
+    "id": "dk-cocomelon",
+    "type": "series",
+    "name": "Cocomelon 🇮🇹",
     "poster": "https://i.ytimg.com/vi/0Z7uBAHLFEk/hqdefault.jpg",
-    "channel": "Cocomelon"
+    "videos": [
+      {
+        "id": "dk--0Z7uBAHLFEk",
+        "season": 1,
+        "episode": 1,
+        "title": "🍉 Cocomelon – La Canzone della Colazione",
+        "video": "https://yourdomain.com/Videos/0Z7uBAHLFEk.mp4",
+        "poster": "https://i.ytimg.com/vi/0Z7uBAHLFEk/hqdefault.jpg"
+      }
+    ]
   },
   {
-    "youtubeId": "-dtpkFw2Ljc",
-    "title": "Veranda Santa 🧑‍🎄 | Episodio completo 📺 | Bluey Italiano Canale Ufficiale 💙 🇮🇹",
-    "poster": "https://i.ytimg.com/vi/-dtpkFw2Ljc/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "HdDaRZ5AJkU",
-    "title": "Bagno di Natale 🎄 🏊‍♀️ | Bluey Italiano Canale Ufficiale 💙 🇮🇹",
-    "poster": "https://i.ytimg.com/vi/HdDaRZ5AJkU/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "i7S3-j-Xc5k",
-    "title": "L'ora delle storie per le vacanze 📕💙 | Bluey Italiano Canale Ufficiale",
-    "poster": "https://i.ytimg.com/vi/i7S3-j-Xc5k/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "IZSoVUIa4Qk",
-    "title": "Giocare con i giocattoli 🧸💙 | Bluey Italiano Canale Ufficiale",
-    "poster": "https://i.ytimg.com/vi/IZSoVUIa4Qk/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "lokQXoYjGOs",
-    "title": "Babbo Veranda 🎄| Bluey Italiano Canale Ufficiale",
+    "id": "dk-bluey",
+    "type": "series",
+    "name": "Bluey 🇮🇹",
     "poster": "https://i.ytimg.com/vi/lokQXoYjGOs/hqdefault.jpg",
-    "channel": "Bluey"
+    "videos": [
+      {
+        "id": "dk--lokQXoYjGOs",
+        "season": 1,
+        "episode": 1,
+        "title": "Babbo Veranda 🎄| Bluey Italiano Canale Ufficiale",
+        "video": "https://yourdomain.com/Videos/lokQXoYjGOs.mp4",
+        "poster": "https://i.ytimg.com/vi/lokQXoYjGOs/hqdefault.jpg"
+      },
+      {
+        "id": "dk--HdDaRZ5AJkU",
+        "season": 1,
+        "episode": 2,
+        "title": "Bagno di Natale 🎄 🏊‍♀️ | Bluey Italiano Canale Ufficiale 💙 🇮🇹",
+        "video": "https://yourdomain.com/Videos/HdDaRZ5AJkU.mp4",
+        "poster": "https://i.ytimg.com/vi/HdDaRZ5AJkU/hqdefault.jpg"
+      },
+      {
+        "id": "dk--uFnCzLnUO-U",
+        "season": 1,
+        "episode": 3,
+        "title": "Bagno di Natale 🎅🏊 | Episodi Completi |  🐶 Bluey",
+        "video": "https://yourdomain.com/Videos/uFnCzLnUO-U.mp4",
+        "poster": "https://i.ytimg.com/vi/uFnCzLnUO-U/hqdefault.jpg"
+      },
+      {
+        "id": "dk--X5jpdpvqF4w",
+        "season": 1,
+        "episode": 4,
+        "title": "Bagno di Natale 🤿 | Parte 2 | 🐶 Bluey",
+        "video": "https://yourdomain.com/Videos/X5jpdpvqF4w.mp4",
+        "poster": "https://i.ytimg.com/vi/X5jpdpvqF4w/hqdefault.jpg"
+      },
+      {
+        "id": "dk--zkQ7JPp9EI4",
+        "season": 1,
+        "episode": 5,
+        "title": "Bluey Canzone: Edizione biscotti di Natale 🎄 🍪 | 🐶 Bluey",
+        "video": "https://yourdomain.com/Videos/zkQ7JPp9EI4.mp4",
+        "poster": "https://i.ytimg.com/vi/zkQ7JPp9EI4/hqdefault.jpg"
+      },
+      {
+        "id": "dk--IZSoVUIa4Qk",
+        "season": 1,
+        "episode": 6,
+        "title": "Giocare con i giocattoli 🧸💙 | Bluey Italiano Canale Ufficiale",
+        "video": "https://yourdomain.com/Videos/IZSoVUIa4Qk.mp4",
+        "poster": "https://i.ytimg.com/vi/IZSoVUIa4Qk/hqdefault.jpg"
+      },
+      {
+        "id": "dk--mBBHDANwOHA",
+        "season": 1,
+        "episode": 7,
+        "title": "Il Natale della famiglia Heeler 💙🎄| Bluey Italiano Canale Ufficiale",
+        "video": "https://yourdomain.com/Videos/mBBHDANwOHA.mp4",
+        "poster": "https://i.ytimg.com/vi/mBBHDANwOHA/hqdefault.jpg"
+      },
+      {
+        "id": "dk--i7S3-j-Xc5k",
+        "season": 1,
+        "episode": 8,
+        "title": "L'ora delle storie per le vacanze 📕💙 | Bluey Italiano Canale Ufficiale",
+        "video": "https://yourdomain.com/Videos/i7S3-j-Xc5k.mp4",
+        "poster": "https://i.ytimg.com/vi/i7S3-j-Xc5k/hqdefault.jpg"
+      },
+      {
+        "id": "dk--PLlL3YHuCQ7grURVfapEQkkasKC7HpjCwj",
+        "season": 1,
+        "episode": 9,
+        "title": "Natale con Bluey 🎄",
+        "video": "https://yourdomain.com/Videos/PLlL3YHuCQ7grURVfapEQkkasKC7HpjCwj.mp4",
+        "poster": "https://i.ytimg.com/vi/PLlL3YHuCQ7grURVfapEQkkasKC7HpjCwj/hqdefault.jpg"
+      },
+      {
+        "id": "dk--SG6LiwvoLwA",
+        "season": 1,
+        "episode": 10,
+        "title": "Shopping per le vacanze  🛒 | 🐶 Bluey",
+        "video": "https://yourdomain.com/Videos/SG6LiwvoLwA.mp4",
+        "poster": "https://i.ytimg.com/vi/SG6LiwvoLwA/hqdefault.jpg"
+      },
+      {
+        "id": "dk---dtpkFw2Ljc",
+        "season": 1,
+        "episode": 11,
+        "title": "Veranda Santa 🧑‍🎄 | Episodio completo 📺 | Bluey Italiano Canale Ufficiale 💙 🇮🇹",
+        "video": "https://yourdomain.com/Videos/-dtpkFw2Ljc.mp4",
+        "poster": "https://i.ytimg.com/vi/-dtpkFw2Ljc/hqdefault.jpg"
+      }
+    ]
   },
   {
-    "youtubeId": "mBBHDANwOHA",
-    "title": "Il Natale della famiglia Heeler 💙🎄| Bluey Italiano Canale Ufficiale",
-    "poster": "https://i.ytimg.com/vi/mBBHDANwOHA/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "PLlL3YHuCQ7grURVfapEQkkasKC7HpjCwj",
-    "title": "Natale con Bluey 🎄",
-    "poster": "https://i.ytimg.com/vi/PLlL3YHuCQ7grURVfapEQkkasKC7HpjCwj/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "SG6LiwvoLwA",
-    "title": "Shopping per le vacanze  🛒 | 🐶 Bluey",
-    "poster": "https://i.ytimg.com/vi/SG6LiwvoLwA/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "uFnCzLnUO-U",
-    "title": "Bagno di Natale 🎅🏊 | Episodi Completi |  🐶 Bluey",
-    "poster": "https://i.ytimg.com/vi/uFnCzLnUO-U/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "X5jpdpvqF4w",
-    "title": "Bagno di Natale 🤿 | Parte 2 | 🐶 Bluey",
-    "poster": "https://i.ytimg.com/vi/X5jpdpvqF4w/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "zkQ7JPp9EI4",
-    "title": "Bluey Canzone: Edizione biscotti di Natale 🎄 🍪 | 🐶 Bluey",
-    "poster": "https://i.ytimg.com/vi/zkQ7JPp9EI4/hqdefault.jpg",
-    "channel": "Bluey"
-  },
-  {
-    "youtubeId": "v7fYvb7ntxE",
-    "title": "Hank e il Camion Dei Rifiuti | Impariamo a volare | Netflix Jr",
+    "id": "dk-hank-e-il-camion-dei-rifiuti",
+    "type": "series",
+    "name": "Hank e il camion dei rifiuti 🇮🇹",
     "poster": "https://i.ytimg.com/vi/v7fYvb7ntxE/hqdefault.jpg",
-    "channel": "Hank e il camion dei rifiuti"
+    "videos": [
+      {
+        "id": "dk--v7fYvb7ntxE",
+        "season": 1,
+        "episode": 1,
+        "title": "Hank e il Camion Dei Rifiuti | Impariamo a volare | Netflix Jr",
+        "video": "https://yourdomain.com/Videos/v7fYvb7ntxE.mp4",
+        "poster": "https://i.ytimg.com/vi/v7fYvb7ntxE/hqdefault.jpg"
+      }
+    ]
   },
   {
-    "youtubeId": "txjTB72q_8c",
-    "title": "🔤 POCOYO ITALIANO- Le lettere dell'alfabeto [ 92 min ] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/txjTB72q_8c/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "HUmVfgldUbE",
-    "title": "📚  POCOYO ITALIANO- Pocoyo torna a Scuola! | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/HUmVfgldUbE/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "MzH0D66h_LI",
-    "title": "POCOYO ITALIANO ⛳️ Pocoyo ci riesce bene ⛳️ VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/MzH0D66h_LI/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "qAaS70l7q6Y",
-    "title": "POCOYO ITALIANO 🤹 Giocolieri 🤹 VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/qAaS70l7q6Y/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "7pwXG-9hNIs",
-    "title": "POCOYO ITALIANO 👑 …E vissero… come matti per sempre 👑 VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/7pwXG-9hNIs/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "sMddXwZhpeU",
-    "title": "POCOYO ITALIANO ⚗ Il frullatore matto ⚗ VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/sMddXwZhpeU/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "BMkIxOoIkrI",
-    "title": "🎒 POCOYO E LA SCUOLA ✏️ Prepararsi per il ritorno a scuola!",
-    "poster": "https://i.ytimg.com/vi/BMkIxOoIkrI/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "52x7V_4eEmk",
-    "title": "🤖 POCOYO ITALIANO - Ritorno a Scuola 2019 [133 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/52x7V_4eEmk/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "_qORm11dpgw",
-    "title": "✂️  POCOYO ITALIANO- Arts & Crafts: Cartellina per la Scuola  | VIDEO e CARTONI ANIMATI per bambini",
+    "id": "dk-pocoyo",
+    "type": "series",
+    "name": "Pocoyo 🇮🇹",
     "poster": "https://i.ytimg.com/vi/_qORm11dpgw/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "dgBoRZW2P2Y",
-    "title": "🚌 POCOYO ITALIANO- Primo Giorno di Scuola [73 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/dgBoRZW2P2Y/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "x-h4C8KL-N0",
-    "title": "🚍  POCOYO ITALIANO- Tornare a Scuola [42 min]  | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/x-h4C8KL-N0/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "diwslNtpi98",
-    "title": "📎  POCOYO ITALIANO- Vado a Scuola | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/diwslNtpi98/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "JVp1yS5g2lc",
-    "title": "✏️  POCOYO ITALIANO- Arts & Crafts: Cartella per Scuola | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/JVp1yS5g2lc/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "tY4RtBNIaUY",
-    "title": "✏️  POCOYO ITALIANO- Arts & Crafts: Tappi per Penne | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/tY4RtBNIaUY/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "29z8Z3EuXrg",
-    "title": "Pocoyo Arts & Crafts: Manualitá per la scuola [Ep 3]",
-    "poster": "https://i.ytimg.com/vi/29z8Z3EuXrg/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "YIzZdmPtRro",
-    "title": "🧑‍🏫  POCOYO ITALIANO- Buon Ritorno a Scuola | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/YIzZdmPtRro/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "tseZ04sM-tM",
-    "title": "🎨  POCOYO ITALIANO- Impara i Colori [61 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/tseZ04sM-tM/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "1IGFmC5w7Ds",
-    "title": "🔺  POCOYO ITALIANO- Impara le Forme Geometriche [61 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/1IGFmC5w7Ds/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "wcPF0ulVovw",
-    "title": "🚌  POCOYO ITALIANO- Il Piccolo Autobus [63 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/wcPF0ulVovw/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "e1Hz1cNMmyA",
-    "title": "👩‍🏫  POCOYO ITALIANO- Educazione Infantile per Tutti! [63 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/e1Hz1cNMmyA/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "Zn0XURgnUAg",
-    "title": "🌈  POCOYO ITALIANO- Vivere a Colori [59 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/Zn0XURgnUAg/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "qH5ude4f9S4",
-    "title": "🔝  POCOYO ITALIANO- Gigante Vs Piccolo [60 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/qH5ude4f9S4/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "B00Y93fsxZY",
-    "title": "🚌  POCOYO ITALIANO- Le Ruote dello Scuolabus [86 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/B00Y93fsxZY/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "NfdjfsFCIvs",
-    "title": "🚦  POCOYO ITALIANO- Semaforo Rosso Giallo Verde [90 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/NfdjfsFCIvs/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "E1IoB0qPkKg",
-    "title": "🎨   POCOYO ITALIANO- I Colori dell'Arcobaleno [88 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/E1IoB0qPkKg/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "QXJJEr9gvKw",
-    "title": "🚌  POCOYO ITALIANO- Mezzi di Trasporto [87 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/QXJJEr9gvKw/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "9zNKwYexBS0",
-    "title": "🔠  POCOYO ITALIANO- Lettere dell'Alfabeto ABC [52 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/9zNKwYexBS0/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "7OF-lKeYH2I",
-    "title": "🚌  POCOYO ITALIANO- Torniamo a Scuola! [90 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/7OF-lKeYH2I/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "3Xcgk2vb05I",
-    "title": "🍭  POCOYO ITALIANO- Impariamo i Colori [94 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/3Xcgk2vb05I/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "PtofEQwhS_0",
-    "title": "✌️ 🔢  POCOYO ITALIANO- Impariamo a Contare i Numeri [94 min] | VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/PtofEQwhS_0/hqdefault.jpg",
-    "channel": "Pocoyo"
-  },
-  {
-    "youtubeId": "m5tZCONM16M",
-    "title": "🎺 POCOYO ITALIANO-Impara i suoni degli Strumenti Musicali[98 min]VIDEO e CARTONI ANIMATI per bambini",
-    "poster": "https://i.ytimg.com/vi/m5tZCONM16M/hqdefault.jpg",
-    "channel": "Pocoyo"
+    "videos": [
+      {
+        "id": "dk--_qORm11dpgw",
+        "season": 1,
+        "episode": 1,
+        "title": "✂️  POCOYO ITALIANO- Arts & Crafts: Cartellina per la Scuola  | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/_qORm11dpgw.mp4",
+        "poster": "https://i.ytimg.com/vi/_qORm11dpgw/hqdefault.jpg"
+      },
+      {
+        "id": "dk--PtofEQwhS_0",
+        "season": 1,
+        "episode": 2,
+        "title": "✌️ 🔢  POCOYO ITALIANO- Impariamo a Contare i Numeri [94 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/PtofEQwhS_0.mp4",
+        "poster": "https://i.ytimg.com/vi/PtofEQwhS_0/hqdefault.jpg"
+      },
+      {
+        "id": "dk--JVp1yS5g2lc",
+        "season": 1,
+        "episode": 3,
+        "title": "✏️  POCOYO ITALIANO- Arts & Crafts: Cartella per Scuola | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/JVp1yS5g2lc.mp4",
+        "poster": "https://i.ytimg.com/vi/JVp1yS5g2lc/hqdefault.jpg"
+      },
+      {
+        "id": "dk--tY4RtBNIaUY",
+        "season": 1,
+        "episode": 4,
+        "title": "✏️  POCOYO ITALIANO- Arts & Crafts: Tappi per Penne | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/tY4RtBNIaUY.mp4",
+        "poster": "https://i.ytimg.com/vi/tY4RtBNIaUY/hqdefault.jpg"
+      },
+      {
+        "id": "dk--Zn0XURgnUAg",
+        "season": 1,
+        "episode": 5,
+        "title": "🌈  POCOYO ITALIANO- Vivere a Colori [59 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/Zn0XURgnUAg.mp4",
+        "poster": "https://i.ytimg.com/vi/Zn0XURgnUAg/hqdefault.jpg"
+      },
+      {
+        "id": "dk--3Xcgk2vb05I",
+        "season": 1,
+        "episode": 6,
+        "title": "🍭  POCOYO ITALIANO- Impariamo i Colori [94 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/3Xcgk2vb05I.mp4",
+        "poster": "https://i.ytimg.com/vi/3Xcgk2vb05I/hqdefault.jpg"
+      },
+      {
+        "id": "dk--BMkIxOoIkrI",
+        "season": 1,
+        "episode": 7,
+        "title": "🎒 POCOYO E LA SCUOLA ✏️ Prepararsi per il ritorno a scuola!",
+        "video": "https://yourdomain.com/Videos/BMkIxOoIkrI.mp4",
+        "poster": "https://i.ytimg.com/vi/BMkIxOoIkrI/hqdefault.jpg"
+      },
+      {
+        "id": "dk--E1IoB0qPkKg",
+        "season": 1,
+        "episode": 8,
+        "title": "🎨   POCOYO ITALIANO- I Colori dell'Arcobaleno [88 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/E1IoB0qPkKg.mp4",
+        "poster": "https://i.ytimg.com/vi/E1IoB0qPkKg/hqdefault.jpg"
+      },
+      {
+        "id": "dk--tseZ04sM-tM",
+        "season": 1,
+        "episode": 9,
+        "title": "🎨  POCOYO ITALIANO- Impara i Colori [61 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/tseZ04sM-tM.mp4",
+        "poster": "https://i.ytimg.com/vi/tseZ04sM-tM/hqdefault.jpg"
+      },
+      {
+        "id": "dk--m5tZCONM16M",
+        "season": 1,
+        "episode": 10,
+        "title": "🎺 POCOYO ITALIANO-Impara i suoni degli Strumenti Musicali[98 min]VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/m5tZCONM16M.mp4",
+        "poster": "https://i.ytimg.com/vi/m5tZCONM16M/hqdefault.jpg"
+      },
+      {
+        "id": "dk--e1Hz1cNMmyA",
+        "season": 1,
+        "episode": 11,
+        "title": "👩‍🏫  POCOYO ITALIANO- Educazione Infantile per Tutti! [63 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/e1Hz1cNMmyA.mp4",
+        "poster": "https://i.ytimg.com/vi/e1Hz1cNMmyA/hqdefault.jpg"
+      },
+      {
+        "id": "dk--diwslNtpi98",
+        "season": 1,
+        "episode": 12,
+        "title": "📎  POCOYO ITALIANO- Vado a Scuola | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/diwslNtpi98.mp4",
+        "poster": "https://i.ytimg.com/vi/diwslNtpi98/hqdefault.jpg"
+      },
+      {
+        "id": "dk--HUmVfgldUbE",
+        "season": 1,
+        "episode": 13,
+        "title": "📚  POCOYO ITALIANO- Pocoyo torna a Scuola! | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/HUmVfgldUbE.mp4",
+        "poster": "https://i.ytimg.com/vi/HUmVfgldUbE/hqdefault.jpg"
+      },
+      {
+        "id": "dk--qH5ude4f9S4",
+        "season": 1,
+        "episode": 14,
+        "title": "🔝  POCOYO ITALIANO- Gigante Vs Piccolo [60 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/qH5ude4f9S4.mp4",
+        "poster": "https://i.ytimg.com/vi/qH5ude4f9S4/hqdefault.jpg"
+      },
+      {
+        "id": "dk--9zNKwYexBS0",
+        "season": 1,
+        "episode": 15,
+        "title": "🔠  POCOYO ITALIANO- Lettere dell'Alfabeto ABC [52 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/9zNKwYexBS0.mp4",
+        "poster": "https://i.ytimg.com/vi/9zNKwYexBS0/hqdefault.jpg"
+      },
+      {
+        "id": "dk--txjTB72q_8c",
+        "season": 1,
+        "episode": 16,
+        "title": "🔤 POCOYO ITALIANO- Le lettere dell'alfabeto [ 92 min ] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/txjTB72q_8c.mp4",
+        "poster": "https://i.ytimg.com/vi/txjTB72q_8c/hqdefault.jpg"
+      },
+      {
+        "id": "dk--1IGFmC5w7Ds",
+        "season": 1,
+        "episode": 17,
+        "title": "🔺  POCOYO ITALIANO- Impara le Forme Geometriche [61 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/1IGFmC5w7Ds.mp4",
+        "poster": "https://i.ytimg.com/vi/1IGFmC5w7Ds/hqdefault.jpg"
+      },
+      {
+        "id": "dk--52x7V_4eEmk",
+        "season": 1,
+        "episode": 18,
+        "title": "🤖 POCOYO ITALIANO - Ritorno a Scuola 2019 [133 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/52x7V_4eEmk.mp4",
+        "poster": "https://i.ytimg.com/vi/52x7V_4eEmk/hqdefault.jpg"
+      },
+      {
+        "id": "dk--YIzZdmPtRro",
+        "season": 1,
+        "episode": 19,
+        "title": "🧑‍🏫  POCOYO ITALIANO- Buon Ritorno a Scuola | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/YIzZdmPtRro.mp4",
+        "poster": "https://i.ytimg.com/vi/YIzZdmPtRro/hqdefault.jpg"
+      },
+      {
+        "id": "dk--wcPF0ulVovw",
+        "season": 1,
+        "episode": 20,
+        "title": "🚌  POCOYO ITALIANO- Il Piccolo Autobus [63 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/wcPF0ulVovw.mp4",
+        "poster": "https://i.ytimg.com/vi/wcPF0ulVovw/hqdefault.jpg"
+      },
+      {
+        "id": "dk--B00Y93fsxZY",
+        "season": 1,
+        "episode": 21,
+        "title": "🚌  POCOYO ITALIANO- Le Ruote dello Scuolabus [86 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/B00Y93fsxZY.mp4",
+        "poster": "https://i.ytimg.com/vi/B00Y93fsxZY/hqdefault.jpg"
+      },
+      {
+        "id": "dk--QXJJEr9gvKw",
+        "season": 1,
+        "episode": 22,
+        "title": "🚌  POCOYO ITALIANO- Mezzi di Trasporto [87 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/QXJJEr9gvKw.mp4",
+        "poster": "https://i.ytimg.com/vi/QXJJEr9gvKw/hqdefault.jpg"
+      },
+      {
+        "id": "dk--7OF-lKeYH2I",
+        "season": 1,
+        "episode": 23,
+        "title": "🚌  POCOYO ITALIANO- Torniamo a Scuola! [90 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/7OF-lKeYH2I.mp4",
+        "poster": "https://i.ytimg.com/vi/7OF-lKeYH2I/hqdefault.jpg"
+      },
+      {
+        "id": "dk--dgBoRZW2P2Y",
+        "season": 1,
+        "episode": 24,
+        "title": "🚌 POCOYO ITALIANO- Primo Giorno di Scuola [73 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/dgBoRZW2P2Y.mp4",
+        "poster": "https://i.ytimg.com/vi/dgBoRZW2P2Y/hqdefault.jpg"
+      },
+      {
+        "id": "dk--x-h4C8KL-N0",
+        "season": 1,
+        "episode": 25,
+        "title": "🚍  POCOYO ITALIANO- Tornare a Scuola [42 min]  | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/x-h4C8KL-N0.mp4",
+        "poster": "https://i.ytimg.com/vi/x-h4C8KL-N0/hqdefault.jpg"
+      },
+      {
+        "id": "dk--NfdjfsFCIvs",
+        "season": 1,
+        "episode": 26,
+        "title": "🚦  POCOYO ITALIANO- Semaforo Rosso Giallo Verde [90 min] | VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/NfdjfsFCIvs.mp4",
+        "poster": "https://i.ytimg.com/vi/NfdjfsFCIvs/hqdefault.jpg"
+      },
+      {
+        "id": "dk--29z8Z3EuXrg",
+        "season": 1,
+        "episode": 27,
+        "title": "Pocoyo Arts & Crafts: Manualitá per la scuola [Ep 3]",
+        "video": "https://yourdomain.com/Videos/29z8Z3EuXrg.mp4",
+        "poster": "https://i.ytimg.com/vi/29z8Z3EuXrg/hqdefault.jpg"
+      },
+      {
+        "id": "dk--sMddXwZhpeU",
+        "season": 1,
+        "episode": 28,
+        "title": "POCOYO ITALIANO ⚗ Il frullatore matto ⚗ VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/sMddXwZhpeU.mp4",
+        "poster": "https://i.ytimg.com/vi/sMddXwZhpeU/hqdefault.jpg"
+      },
+      {
+        "id": "dk--MzH0D66h_LI",
+        "season": 1,
+        "episode": 29,
+        "title": "POCOYO ITALIANO ⛳️ Pocoyo ci riesce bene ⛳️ VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/MzH0D66h_LI.mp4",
+        "poster": "https://i.ytimg.com/vi/MzH0D66h_LI/hqdefault.jpg"
+      },
+      {
+        "id": "dk--7pwXG-9hNIs",
+        "season": 1,
+        "episode": 30,
+        "title": "POCOYO ITALIANO 👑 …E vissero… come matti per sempre 👑 VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/7pwXG-9hNIs.mp4",
+        "poster": "https://i.ytimg.com/vi/7pwXG-9hNIs/hqdefault.jpg"
+      },
+      {
+        "id": "dk--qAaS70l7q6Y",
+        "season": 1,
+        "episode": 31,
+        "title": "POCOYO ITALIANO 🤹 Giocolieri 🤹 VIDEO e CARTONI ANIMATI per bambini",
+        "video": "https://yourdomain.com/Videos/qAaS70l7q6Y.mp4",
+        "poster": "https://i.ytimg.com/vi/qAaS70l7q6Y/hqdefault.jpg"
+      }
+    ]
   }
 ]
