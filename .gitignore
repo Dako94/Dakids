@@ -13,8 +13,6 @@ build/
 .cache/
 
 # 🎞️ File locali e media
-images/
-
 *.log
 
 # 🧪 Test e debug
