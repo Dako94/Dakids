@@ -115,44 +115,57 @@ app.get("/", (req, res) => {
 });
 
 /**
- * MANIFEST esterno
+ * MANIFEST
  */
 app.get("/manifest.json", (_req, res) => {
-  const manifest = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "manifest.json"), "utf-8")
-  );
-  res.json(manifest);
+  res.json({
+    id: "com.dakids",
+    version: "1.0.0",
+    name: "Dakids 🇮🇹",
+    description: "Cartoni per bambini",
+    logo: "https://dakids.onrender.com/media/icon.png",
+    background: "https://dakids.onrender.com/media/background.jpg",
+    types: ["channel"],
+    idPrefixes: ["dk"],
+    resources: ["catalog", "meta", "stream"],
+    catalogs: [
+      { type: "channel", id: "dakids", name: "Dakids 🇮🇹", extra: [] }
+    ]
+  });
 });
 
 /**
- * CATALOG: per ogni canale (es. bluey, pocoyo)
+ * CATALOG: mostra i canali con immagini
  */
-app.get("/catalog/channel/:id.json", (req, res) => {
+app.get("/catalog/channel/dakids.json", (req, res) => {
   const base = `${req.protocol}://${req.get("host")}`;
-  const id = req.params.id;
-  const serie = seriesList.find(s => s.id === `dk-${id}`);
-  if (!serie) return res.json({ metas: [] });
-
-  const metas = serie.videos.map(ep => ({
-    id: ep.id,
-    type: "channel",
-    name: ep.title,
-    poster: ep.poster
-  }));
-
+  const channels = seriesList.map(s => s.name || s.id);
+  const metas = channels.map(channel => {
+    const id = `dk-${channel.toLowerCase().replace(/\s+/g, "-")}`;
+    const filename = id.replace("dk-", "").replace(/[^a-z0-9\-]/gi, "");
+    return {
+      id,
+      type: "channel",
+      name: channel,
+      poster: `${base}/images/${filename}.jpg`,
+      description: `Episodi di ${channel}`,
+      genres: ["Kids"]
+    };
+  });
   res.json({ metas });
 });
 
 /**
- * META: dettagli del canale
+ * META: mostra gli episodi di un canale
  */
 app.get("/meta/channel/:id.json", (req, res) => {
   const base = `${req.protocol}://${req.get("host")}`;
-  const id = req.params.id;
-  const serie = seriesList.find(s => s.id === `dk-${id}`);
-  if (!serie) return res.json({ meta: null });
+  const rawId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
+  const allEpisodes = getAllEpisodes();
+  const filtered = allEpisodes.filter(e => e.channel.toLowerCase() === rawId);
+  const originalChannel = filtered.length > 0 ? filtered[0].channel : rawId;
 
-  const videos = serie.videos.map(ep => ({
+  const videos = filtered.map(ep => ({
     id: ep.id,
     title: ep.title,
     overview: ep.title,
@@ -161,11 +174,11 @@ app.get("/meta/channel/:id.json", (req, res) => {
 
   res.json({
     meta: {
-      id: `dk-${id}`,
+      id: req.params.id,
       type: "channel",
-      name: serie.name,
-      poster: `${base}/images/${id}.jpg`,
-      description: `Episodi di ${serie.name}`,
+      name: originalChannel,
+      poster: `${base}/images/${req.params.id.replace("dk-", "").replace(/[^a-z0-9\-]/gi, "")}.jpg`,
+      description: `Episodi di ${originalChannel}`,
       videos
     }
   });
