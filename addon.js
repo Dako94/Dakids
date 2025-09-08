@@ -142,6 +142,7 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
   const channels = seriesList.map(s => s.name || s.id);
   const metas = channels.map(channel => {
     const id = `dk-${channel.toLowerCase().replace(/\s+/g, "-")}`;
+    const filename = channel.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9\-]/gi, "");
     const filename = id.replace("dk-", "").replace(/[^a-z0-9\-]/gi, "");
     return {
       id,
