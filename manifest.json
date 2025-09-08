@@ -3,18 +3,18 @@
   "version": "1.0.0",
   "name": "Dakids 🇮🇹",
   "description": "Episodi in italiano da YouTube",
-  "types": ["series"],
+  "types": ["channel"],
   "idPrefixes": ["dk"],
   "resources": ["catalog", "meta", "stream"],
   "catalogs": [
     {
-      "type": "series",
+      "type": "channel",
       "id": "bluey",
       "name": "Bluey 🇮🇹",
       "extra": []
     },
     {
-      "type": "series",
+      "type": "channel",
       "id": "pocoyo",
       "name": "Pocoyo 🇮🇹",
       "extra": []
