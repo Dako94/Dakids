@@ -3,33 +3,33 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";           // ← import fetch per seguire redirect
+import fetch from "node-fetch";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// Serve immagini e media
+// helper per costruire baseURL dinamico
+function getBaseUrl(req) {
+  return `${req.protocol}://${req.get("host")}`;
+}
+
+// statico per media/images
 app.use("/media", express.static(path.join(__dirname, "media")));
 app.use("/images", express.static(path.join(__dirname, "images")));
 
-// NON serviamo più /videos dal filesystem
-// app.use("/videos", express.static(path.join(__dirname, "videos")));
-
-// Redirect HTTP→HTTPS su Render
+// redirect HTTP→HTTPS (Render)
 app.enable("trust proxy");
 app.use((req, res, next) => {
   if (req.get("x-forwarded-proto") === "http") {
-    const host = req.get("host");
-    return res.redirect(301, `https://${host}${req.originalUrl}`);
+    return res.redirect(301, `https://${req.get("host")}${req.originalUrl}`);
   }
   next();
 });
 
-// Carica meta.json
+// carica serie da meta.json
 let seriesList = [];
 try {
   const raw = fs.readFileSync(path.resolve(__dirname, "meta.json"), "utf-8");
@@ -39,7 +39,7 @@ try {
   console.error("❌ Errore meta.json:", err.message);
 }
 
-// Helper per estrarre tutti gli episodi
+// tutti gli episodi in un array flat
 function getAllEpisodes() {
   return seriesList.flatMap(series =>
     Array.isArray(series.videos)
@@ -52,22 +52,22 @@ function getAllEpisodes() {
   );
 }
 
-// Segui redirect e ritorna URL finale
+// segue i redirect di GitHub Release → S3
 async function resolveFinalUrl(url) {
   try {
     const res = await fetch(url, { method: "HEAD", redirect: "manual" });
-    if ((res.status === 302 || res.status === 301) && res.headers.get("location")) {
+    if ((res.status === 301 || res.status === 302) && res.headers.get("location")) {
       return res.headers.get("location");
     }
-  } catch (err) {
-    console.warn("⚠️ Errore follow redirect:", err.message);
+  } catch (e) {
+    console.warn("⚠️ Errore HEAD redirect:", e.message);
   }
   return url;
 }
 
 // Homepage
-app.get("/", (_req, res) => {
-  const base = `${_req.protocol}://${_req.get("host")}`;
+app.get("/", (req, res) => {
+  const base = getBaseUrl(req);
   res.send(`
     <html><head><title>Dakids 🇮🇹</title></head>
     <body style="font-family:sans-serif;text-align:center;padding:2rem;">
@@ -91,26 +91,23 @@ app.get("/manifest.json", (_req, res) => {
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
     catalogs: [
-      {
-        type: "channel",
-        id: "dakids",
-        name: "Dakids 🇮🇹",
-        extra: []
-      }
+      { type: "channel", id: "dakids", name: "Dakids 🇮🇹", extra: [] }
     ]
   });
 });
 
 // Catalog
-app.get("/catalog/channel/dakids.json", (_req, res) => {
+app.get("/catalog/channel/dakids.json", (req, res) => {
+  const base = getBaseUrl(req);
   const channels = seriesList.map(s => s.name || s.id);
   const metas = channels.map(channel => {
     const id = `dk-${channel.toLowerCase().replace(/\s+/g, "-")}`;
+    const filename = id.replace("dk-", "");
     return {
       id,
       type: "channel",
       name: channel,
-      poster: `https://dakids.onrender.com/images/${id.replace("dk-", "")}.jpg`,
+      poster: `${base}/images/${filename}.jpg`,
       description: `Episodi di ${channel}`,
       genres: ["Kids"]
     };
@@ -118,50 +115,52 @@ app.get("/catalog/channel/dakids.json", (_req, res) => {
   res.json({ metas });
 });
 
-// Meta per ogni canale
+// Meta per canale
 app.get("/meta/channel/:id.json", (req, res) => {
+  const base = getBaseUrl(req);
   const rawId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
-  const allEpisodes = getAllEpisodes();
-  const filtered = allEpisodes.filter(
-    e => e.channel && e.channel.toLowerCase() === rawId
-  );
-  const originalChannel = filtered.length > 0 ? filtered[0].channel : rawId;
+  const all = getAllEpisodes();
+  const filtered = all.filter(e => e.channel.toLowerCase() === rawId);
+  const origChannel = filtered.length > 0 ? filtered[0].channel : rawId;
 
-  const videos = filtered.map(ep => ({
-    id: ep.id,
-    title: ep.title,
-    overview: ep.title,
-    thumbnail: ep.poster
-  }));
+  const videos = filtered.map(ep => {
+    const thumbUrl = ep.poster.startsWith("http")
+      ? ep.poster
+      : `${base}/images/${req.params.id.replace("dk-", "")}.jpg`;
+    return {
+      id: ep.id,
+      title: ep.title,
+      overview: ep.title,
+      thumbnail: thumbUrl
+    };
+  });
 
   res.json({
     meta: {
       id: req.params.id,
       type: "channel",
-      name: originalChannel,
-      poster: `https://dakids.onrender.com/images/${req.params.id.replace("dk-", "")}.jpg`,
-      description: `Episodi di ${originalChannel}`,
+      name: origChannel,
+      poster: `${base}/images/${req.params.id.replace("dk-", "")}.jpg`,
+      description: `Episodi di ${origChannel}`,
       videos
     }
   });
 });
 
-// Stream: restituisce direttamente l’URL dell’asset GitHub Release
+// Stream
 app.get("/stream/channel/:id.json", async (req, res) => {
-  const allEpisodes = getAllEpisodes();
-  const ep = allEpisodes.find(e => e.id === req.params.id);
+  const all = getAllEpisodes();
+  const ep = all.find(e => e.id === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
-  // Prendi sempre il link dal JSON
   let fileUrl = ep.video;
-
-  // Se è un asset GitHub, segui il redirect verso S3
   fileUrl = await resolveFinalUrl(fileUrl);
 
   res.json({
     streams: [
       {
         title: ep.title,
+        subtitle: "",              // <— evita il “:null”
         url: fileUrl,
         behaviorHints: { notWebReady: false }
       }
@@ -169,7 +168,7 @@ app.get("/stream/channel/:id.json", async (req, res) => {
   });
 });
 
-// Avvia server
+// Avvia
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Dakids 🇮🇹 Addon attivo su porta ${PORT}`);
