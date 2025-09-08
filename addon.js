@@ -3,19 +3,23 @@ import express from "express";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import fetch from "node-fetch";           // ← import fetch per seguire redirect
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Serve immagini e video
+// Serve immagini e media
 app.use("/media", express.static(path.join(__dirname, "media")));
 app.use("/images", express.static(path.join(__dirname, "images")));
-app.use("/videos", express.static(path.join(__dirname, "videos")));
 
-// Redirect HTTPS su Render
+// NON serviamo più /videos dal filesystem
+// app.use("/videos", express.static(path.join(__dirname, "videos")));
+
+// Redirect HTTP→HTTPS su Render
 app.enable("trust proxy");
 app.use((req, res, next) => {
   if (req.get("x-forwarded-proto") === "http") {
@@ -25,7 +29,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Carica serie e episodi
+// Carica meta.json
 let seriesList = [];
 try {
   const raw = fs.readFileSync(path.resolve(__dirname, "meta.json"), "utf-8");
@@ -35,7 +39,7 @@ try {
   console.error("❌ Errore meta.json:", err.message);
 }
 
-// Estrai tutti gli episodi annidati
+// Helper per estrarre tutti gli episodi
 function getAllEpisodes() {
   return seriesList.flatMap(series =>
     Array.isArray(series.videos)
@@ -48,19 +52,28 @@ function getAllEpisodes() {
   );
 }
 
-// Estrai canali unici
-const channels = seriesList.map(s => s.name || s.id);
+// Segui redirect e ritorna URL finale
+async function resolveFinalUrl(url) {
+  try {
+    const res = await fetch(url, { method: "HEAD", redirect: "manual" });
+    if ((res.status === 302 || res.status === 301) && res.headers.get("location")) {
+      return res.headers.get("location");
+    }
+  } catch (err) {
+    console.warn("⚠️ Errore follow redirect:", err.message);
+  }
+  return url;
+}
 
-// Homepage HTML
-app.get("/", (req, res) => {
-  const base = `${req.protocol}://${req.get("host")}`;
-  const manifest = `${base}/manifest.json`;
+// Homepage
+app.get("/", (_req, res) => {
+  const base = `${_req.protocol}://${_req.get("host")}`;
   res.send(`
     <html><head><title>Dakids 🇮🇹</title></head>
     <body style="font-family:sans-serif;text-align:center;padding:2rem;">
       <h1>Dakids 🇮🇹</h1>
       <p>Manifest Stremio:</p>
-      <code>${manifest}</code>
+      <code>${base}/manifest.json</code>
     </body></html>
   `);
 });
@@ -90,6 +103,7 @@ app.get("/manifest.json", (_req, res) => {
 
 // Catalog
 app.get("/catalog/channel/dakids.json", (_req, res) => {
+  const channels = seriesList.map(s => s.name || s.id);
   const metas = channels.map(channel => {
     const id = `dk-${channel.toLowerCase().replace(/\s+/g, "-")}`;
     return {
@@ -104,11 +118,13 @@ app.get("/catalog/channel/dakids.json", (_req, res) => {
   res.json({ metas });
 });
 
-// Meta
+// Meta per ogni canale
 app.get("/meta/channel/:id.json", (req, res) => {
   const rawId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
   const allEpisodes = getAllEpisodes();
-  const filtered = allEpisodes.filter(e => e.channel && e.channel.toLowerCase() === rawId);
+  const filtered = allEpisodes.filter(
+    e => e.channel && e.channel.toLowerCase() === rawId
+  );
   const originalChannel = filtered.length > 0 ? filtered[0].channel : rawId;
 
   const videos = filtered.map(ep => ({
@@ -130,22 +146,26 @@ app.get("/meta/channel/:id.json", (req, res) => {
   });
 });
 
-// Stream
-app.get("/stream/channel/:id.json", (req, res) => {
+// Stream: restituisce direttamente l’URL dell’asset GitHub Release
+app.get("/stream/channel/:id.json", async (req, res) => {
   const allEpisodes = getAllEpisodes();
   const ep = allEpisodes.find(e => e.id === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
-  const fileUrl = ep.video.startsWith("https://drive.google.com")
-    ? ep.video
-    : `https://dakids.onrender.com/videos/${ep.id.replace("dk--", "")}.mp4`;
+  // Prendi sempre il link dal JSON
+  let fileUrl = ep.video;
+
+  // Se è un asset GitHub, segui il redirect verso S3
+  fileUrl = await resolveFinalUrl(fileUrl);
 
   res.json({
-    streams: [{
-      title: ep.title,
-      url: fileUrl,
-      behaviorHints: { notWebReady: false }
-    }]
+    streams: [
+      {
+        title: ep.title,
+        url: fileUrl,
+        behaviorHints: { notWebReady: false }
+      }
+    ]
   });
 });
 
