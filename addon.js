@@ -66,19 +66,87 @@ async function resolveFinalUrl(url) {
   return url;
 }
 
-// Homepage informativa
+// Homepage divertente per installare il manifest
 app.get("/", (req, res) => {
   const base = getBaseUrl(req);
-  res.send(`
-    <html>
-      <head><title>Dakids 🇮🇹</title></head>
-      <body style="font-family:sans-serif; text-align:center; padding:2rem;">
-        <h1>Dakids 🇮🇹</h1>
-        <p>Manifest Stremio:</p>
-        <code>${base}/manifest.json</code>
-      </body>
-    </html>
-  `);
+  const manifestUrl = `${base}/manifest.json`;
+  res.send(`<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>🎈 Installa Dakids su Stremio! 🎈</title>
+  <style>
+    body {
+      background: #ffe4e1;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      text-align: center;
+      padding: 2rem;
+      color: #333;
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: .5rem;
+      color: #ff69b4;
+      text-shadow: 1px 1px #fff;
+    }
+    p {
+      font-size: 1.25rem;
+      margin: 1rem 0 2rem;
+    }
+    #copy-btn {
+      background: linear-gradient(45deg, #ffb3c1, #ffc107);
+      border: none;
+      border-radius: 50px;
+      color: white;
+      font-size: 1.5rem;
+      padding: .75rem 2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform .1s ease-in-out, box-shadow .1s;
+    }
+    #copy-btn:active {
+      transform: scale(.95);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #notice {
+      margin-top: 1rem;
+      font-size: 1rem;
+      color: #007700;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+    .balloon {
+      font-size: 5rem;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="balloon">🎉🎈🎁</div>
+  <h1>Benvenuto su Dakids!</h1>
+  <p>Per aggiungerci a Stremio, copia il nostro manifest cliccando il pulsante qui sotto.</p>
+  <button id="copy-btn">Copia manifest</button>
+  <div id="notice">Manifest copiato! Apri Stremio → Add-ons → Manifest URL</div>
+
+  <script>
+    const btn = document.getElementById('copy-btn');
+    const notice = document.getElementById('notice');
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('${manifestUrl}');
+        notice.style.opacity = '1';
+        setTimeout(() => notice.style.opacity = '0', 2500);
+      } catch {
+        alert('Impossibile copiare. Copia manualmente:\\n${manifestUrl}');
+      }
+    });
+  </script>
+</body>
+</html>`);
 });
 
 // Manifest Stremio
@@ -94,12 +162,7 @@ app.get("/manifest.json", (_req, res) => {
     idPrefixes: ["dk"],
     resources: ["catalog", "meta", "stream"],
     catalogs: [
-      {
-        type: "channel",
-        id: "dakids",
-        name: "Dakids 🇮🇹",
-        extra: []
-      }
+      { type: "channel", id: "dakids", name: "Dakids 🇮🇹", extra: [] }
     ]
   });
 });
@@ -129,7 +192,7 @@ app.get("/meta/channel/:id.json", (req, res) => {
   const rawId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
   const all = getAllEpisodes();
   const filtered = all.filter(e => e.channel.toLowerCase() === rawId);
-  const channelName = filtered.length > 0 ? filtered[0].channel : rawId;
+  const channelName = filtered[0]?.channel || rawId;
   const posterName = req.params.id.replace("dk-", "");
 
   const videos = filtered.map(ep => ({
@@ -160,7 +223,6 @@ app.get("/stream/channel/:id.json", async (req, res) => {
   }
 
   let fileUrl = ep.video;
-  // Se è GitHub Release asset, segue redirect
   fileUrl = await resolveFinalUrl(fileUrl);
 
   res.json({
@@ -168,7 +230,7 @@ app.get("/stream/channel/:id.json", async (req, res) => {
       {
         title: ep.title,
         url: fileUrl,
-        subtitles: [],                 // array vuoto, elimina ":null"
+        subtitles: [],
         behaviorHints: { notWebReady: false }
       }
     ]
