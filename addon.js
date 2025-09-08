@@ -8,19 +8,15 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// helper per costruire baseURL dinamico
-function getBaseUrl(req) {
-  return `${req.protocol}://${req.get("host")}`;
-}
-
-// statico per media/images
+// Serve media e immagini locali
 app.use("/media", express.static(path.join(__dirname, "media")));
 app.use("/images", express.static(path.join(__dirname, "images")));
 
-// redirect HTTP→HTTPS (Render)
+// Forza redirect HTTP → HTTPS (su Render)
 app.enable("trust proxy");
 app.use((req, res, next) => {
   if (req.get("x-forwarded-proto") === "http") {
@@ -29,7 +25,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// carica serie da meta.json
+// Carica meta.json
 let seriesList = [];
 try {
   const raw = fs.readFileSync(path.resolve(__dirname, "meta.json"), "utf-8");
@@ -39,7 +35,7 @@ try {
   console.error("❌ Errore meta.json:", err.message);
 }
 
-// tutti gli episodi in un array flat
+// Estrai tutti gli episodi
 function getAllEpisodes() {
   return seriesList.flatMap(series =>
     Array.isArray(series.videos)
@@ -52,7 +48,7 @@ function getAllEpisodes() {
   );
 }
 
-// segue i redirect di GitHub Release → S3
+// Risolvi redirect GitHub → S3
 async function resolveFinalUrl(url) {
   try {
     const res = await fetch(url, { method: "HEAD", redirect: "manual" });
@@ -65,20 +61,62 @@ async function resolveFinalUrl(url) {
   return url;
 }
 
-// Homepage
+/**
+ * HOMEPAGE “BAMBINESCA”
+ */
 app.get("/", (req, res) => {
-  const base = getBaseUrl(req);
-  res.send(`
-    <html><head><title>Dakids 🇮🇹</title></head>
-    <body style="font-family:sans-serif;text-align:center;padding:2rem;">
-      <h1>Dakids 🇮🇹</h1>
-      <p>Manifest Stremio:</p>
-      <code>${base}/manifest.json</code>
-    </body></html>
-  `);
+  const base = `${req.protocol}://${req.get("host")}`;
+  const manifestUrl = `${base}/manifest.json`;
+
+  res.send(`<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <title>🎈 Installa Dakids su Stremio! 🎈</title>
+  <style>
+    body { background: #ffe4e1; font-family: 'Comic Sans MS', cursive; text-align: center; padding:2rem; }
+    h1   { font-size: 3rem; color:#ff69b4; }
+    p    { font-size:1.2rem; margin-bottom:2rem; }
+    #copy-btn {
+      background: linear-gradient(45deg,#ffb3c1,#ffc107);
+      border:none; border-radius:50px; color:white;
+      font-size:1.3rem; padding:.75rem 2rem; cursor:pointer;
+      box-shadow:0 4px 6px rgba(0,0,0,0.1);
+    }
+    #notice {
+      margin-top:1rem; font-size:1rem; color:#007700;
+      opacity:0; transition:opacity .3s;
+    }
+    .balloon { font-size:5rem; animation:float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-20px);} }
+  </style>
+</head>
+<body>
+  <div class="balloon">🎉🎈🎁</div>
+  <h1>Benvenuto su Dakids!</h1>
+  <p>Clicca per copiare l’URL del manifest e incollalo in Stremio → Add-ons → Manifest URL</p>
+  <button id="copy-btn">📋 Copia manifest</button>
+  <div id="notice">Manifest copiato! Apri Stremio e incolla l’URL</div>
+  <script>
+    const btn    = document.getElementById('copy-btn');
+    const notice = document.getElementById('notice');
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('${manifestUrl}');
+        notice.style.opacity = '1';
+        setTimeout(() => notice.style.opacity = '0', 2500);
+      } catch {
+        alert('Copia manuale:\\n${manifestUrl}');
+      }
+    });
+  </script>
+</body>
+</html>`);
 });
 
-// Manifest
+/**
+ * MANIFEST
+ */
 app.get("/manifest.json", (_req, res) => {
   res.json({
     id: "com.dakids",
@@ -96,13 +134,15 @@ app.get("/manifest.json", (_req, res) => {
   });
 });
 
-// Catalog
+/**
+ * CATALOG: mostra i canali con immagini
+ */
 app.get("/catalog/channel/dakids.json", (req, res) => {
-  const base = getBaseUrl(req);
+  const base = `${req.protocol}://${req.get("host")}`;
   const channels = seriesList.map(s => s.name || s.id);
   const metas = channels.map(channel => {
     const id = `dk-${channel.toLowerCase().replace(/\s+/g, "-")}`;
-    const filename = id.replace("dk-", "");
+    const filename = id.replace("dk-", "").replace(/[^a-z0-9\-]/gi, "");
     return {
       id,
       type: "channel",
@@ -115,60 +155,58 @@ app.get("/catalog/channel/dakids.json", (req, res) => {
   res.json({ metas });
 });
 
-// Meta per canale
+/**
+ * META: mostra gli episodi di un canale
+ */
 app.get("/meta/channel/:id.json", (req, res) => {
-  const base = getBaseUrl(req);
+  const base = `${req.protocol}://${req.get("host")}`;
   const rawId = req.params.id.replace("dk-", "").replace(/-/g, " ").toLowerCase();
-  const all = getAllEpisodes();
-  const filtered = all.filter(e => e.channel.toLowerCase() === rawId);
-  const origChannel = filtered.length > 0 ? filtered[0].channel : rawId;
+  const allEpisodes = getAllEpisodes();
+  const filtered = allEpisodes.filter(e => e.channel.toLowerCase() === rawId);
+  const originalChannel = filtered.length > 0 ? filtered[0].channel : rawId;
 
-  const videos = filtered.map(ep => {
-    const thumbUrl = ep.poster.startsWith("http")
-      ? ep.poster
-      : `${base}/images/${req.params.id.replace("dk-", "")}.jpg`;
-    return {
-      id: ep.id,
-      title: ep.title,
-      overview: ep.title,
-      thumbnail: thumbUrl
-    };
-  });
+  const videos = filtered.map(ep => ({
+    id: ep.id,
+    title: ep.title,
+    overview: ep.title,
+    thumbnail: ep.poster
+  }));
 
   res.json({
     meta: {
       id: req.params.id,
       type: "channel",
-      name: origChannel,
-      poster: `${base}/images/${req.params.id.replace("dk-", "")}.jpg`,
-      description: `Episodi di ${origChannel}`,
+      name: originalChannel,
+      poster: `${base}/images/${req.params.id.replace("dk-", "").replace(/[^a-z0-9\-]/gi, "")}.jpg`,
+      description: `Episodi di ${originalChannel}`,
       videos
     }
   });
 });
 
-// Stream
+/**
+ * STREAM: restituisce il link diretto al video
+ */
 app.get("/stream/channel/:id.json", async (req, res) => {
-  const all = getAllEpisodes();
-  const ep = all.find(e => e.id === req.params.id);
+  const allEpisodes = getAllEpisodes();
+  const ep = allEpisodes.find(e => e.id === req.params.id);
   if (!ep) return res.json({ streams: [] });
 
-  let fileUrl = ep.video;
-  fileUrl = await resolveFinalUrl(fileUrl);
+  const fileUrl = await resolveFinalUrl(ep.video);
 
   res.json({
     streams: [
       {
         title: ep.title,
-        subtitle: "",              // <— evita il “:null”
         url: fileUrl,
+        subtitles: [],
         behaviorHints: { notWebReady: false }
       }
     ]
   });
 });
 
-// Avvia
+// Avvia server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Dakids 🇮🇹 Addon attivo su porta ${PORT}`);
